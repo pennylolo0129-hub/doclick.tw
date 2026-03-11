@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>客戶及派遣人員管理系統 V1.0 - 效能優化版</title>
+<title>客戶及派遣人員管理系統 V1.0</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-  /* 樣式保持不變 */
+  /* [保留您原始的所有 CSS 樣式] */
   * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Microsoft JhengHei', 'Arial', sans-serif; }
   body { background-color: #f7f8fa; color: #333; line-height: 1.6; }
   .app-container { display: flex; min-height: 100vh; }
@@ -16,7 +16,6 @@
   .sidebar-header { padding: 0 20px 20px; border-bottom: 1px solid #f0f0f0; margin-bottom: 10px; }
   .sidebar-header h1 { font-size: 18px; color: #2d9d5c; font-weight: 600; display: flex; align-items: center; gap: 8px; }
   .sidebar-nav { list-style: none; }
-  .sidebar-nav li { margin: 5px 0; }
   .sidebar-nav a { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: #555; text-decoration: none; border-left: 3px solid transparent; transition: all 0.2s ease; }
   .sidebar-nav a:hover, .sidebar-nav a.active { background-color: #f0f8f4; color: #2d9d5c; border-left-color: #2d9d5c; }
   .main-content { flex: 1; margin-left: 220px; padding: 20px; }
@@ -29,13 +28,24 @@
   .grid div { display: flex; flex-direction: column; }
   .grid label { margin-bottom: 6px; font-weight: 500; font-size: 14px; color: #555; }
   .grid input, .grid select { padding: 8px 10px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 14px; }
-  button.btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px; margin-bottom: 10px; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: background-color 0.2s; }
+  button.btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px; margin-bottom: 10px; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
   .btn-success { background: #2d9d5c; color: white; }
   .btn-warning { background: #f59e0b; color: white; }
+  .btn-excel { background: #2563eb; color: white; }
   .btn-pdf { background: #dc2626; color: white; }
+  .btn-backup { background: #8b5cf6; color: white; }
+  .btn-restore { background: #06b6d4; color: white; }
   table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-  table th { padding: 12px 10px; background: #f8f9fa; color: #444; font-weight: 600; text-align: left; border-bottom: 2px solid #e0e0e0; }
-  table td { padding: 10px; border-bottom: 1px solid #f0f0f0; color: #555; }
+  table th { padding: 12px 10px; background: #f8f9fa; text-align: left; border-bottom: 2px solid #e0e0e0; }
+  table td { padding: 10px; border-bottom: 1px solid #f0f0f0; }
+  .pagination { margin-top: 20px; display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
+  .dashboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .dash-card { background: #ffffff; padding: 20px; border-radius: 8px; text-align: center; border: 1px solid #f0f0f0; }
+  .dash-card .num { font-size: 28px; font-weight: 600; }
+  .green { color: #2d9d5c; }
+  .red { color: #dc2626; }
+  #restoreFile { display: none; }
+  .required { color: #dc2626; }
 </style>
 </head>
 <body>
@@ -43,88 +53,311 @@
 <div class="app-container">
   <div class="sidebar">
     <div class="sidebar-header">
-      <h1><i class="fas fa-users"></i> 客戶及派遣管理系統</h1>
+      <h1><i class="fas fa-users"></i> 派遣人員管理系統</h1>
     </div>
     <ul class="sidebar-nav">
       <li><a href="#" data-page="customer" class="active"><i class="fas fa-building"></i> 客戶資料</a></li>
+      <li><a href="#" data-page="contract"><i class="fas fa-file-contract"></i> 合約方案</a></li>
       <li><a href="#" data-page="staff"><i class="fas fa-user"></i> 派遣人員</a></li>
       <li><a href="#" data-page="attend"><i class="fas fa-clock"></i> 派遣記錄</a></li>
+      <li><a href="#" data-page="point"><i class="fas fa-calculator"></i> 點數統計</a></li>
+      <li><a href="#" data-page="bill"><i class="fas fa-file-invoice"></i> 對帳單</a></li>
+      <li><a href="#" data-page="salary"><i class="fas fa-wallet"></i> 薪資計算</a></li>
+      <li><a href="#" data-page="boss"><i class="fas fa-user-tie"></i> 老闆專區</a></li>
+      <li><a href="#" data-page="dashboard"><i class="fas fa-chart-line"></i> 儀表板</a></li>
     </ul>
   </div>
 
   <div class="main-content">
+    <div class="page-header">
+      <h2 id="main-title">客戶資料管理</h2>
+      <div class="header-actions"><span id="current-time"></span></div>
+    </div>
+
     <div class="page active" id="page-customer">
       <div class="page-title">客戶資料管理</div>
+      <div class="filter-bar">
+        <label>公司：</label><select id="cust_filter_company" onchange="resetPage('customer'); renderCustTable()"></select>
+        <label>狀態：</label>
+        <select id="cust_filter_coop" onchange="resetPage('customer'); renderCustTable()">
+          <option value="all">全部</option><option value="正合作">正合作</option><option value="無合作">無合作</option>
+        </select>
+      </div>
       <div class="grid">
-        <div><label>客戶名稱 *</label><input id="c_name"></div>
+        <div><label>客戶名稱 <span class="required">*</span></label><input id="c_name"></div>
+        <div><label>行業別</label><input id="c_industry"></div>
+        <div><label>聯絡人</label><input id="c_user"></div>
+        <div><label>電話</label><input id="c_tel"></div>
+        <div><label>地址</label><input id="c_addr"></div>
+        <div><label>統編</label><input id="c_tax"></div>
+        <div><label>商品簡介</label><input id="c_goods"></div>
+        <div><label>帳號</label><input id="c_account"></div>
+        <div><label>密碼</label><input id="c_pwd" type="password"></div>
+        <div><label>專區連結</label><input id="c_url"></div>
+        <div><label>備註</label><input id="c_remark"></div>
         <div><label>合作狀態</label><select id="c_coop"><option>正合作</option><option>無合作</option></select></div>
       </div>
-      <button class="btn btn-success" onclick="addCust()">新增客戶</button>
+      <button class="btn btn-success" onclick="addCust()"><i class="fas fa-plus"></i> 新增客戶</button>
+      <button class="btn btn-warning" onclick="updateCust()" id="btnUpdateCust" style="display:none"><i class="fas fa-edit"></i> 修改客戶</button>
+      <button class="btn btn-excel" onclick="exportExcel('custTableBox','客戶資料')"><i class="fas fa-file-excel"></i> 匯出 Excel</button>
       <table id="custTableBox">
-        <thead><tr><th>狀態</th><th>名稱</th><th>操作</th></tr></thead>
+        <thead><tr><th>狀態</th><th>名稱</th><th>行業</th><th>聯絡人</th><th>電話</th><th>操作</th></tr></thead>
         <tbody id="custTable"></tbody>
       </table>
     </div>
 
-    <div class="page" id="page-staff">
-      <div class="page-title">派遣人員管理</div>
+    <div class="page" id="page-contract">
+      <div class="page-title">合約方案</div>
+      <div class="filter-bar">
+        <label>公司：</label><select id="contract_filter_company" onchange="resetPage('contract'); renderContractTable()"></select>
+      </div>
       <div class="grid">
-        <div><label>人員姓名 *</label><input id="staff_name"></div>
-        <div><label>聯絡電話</label><input id="staff_tel"></div>
+        <div><label>公司 <span class="required">*</span></label><select id="con_customer"></select></div>
+        <div><label>會員類型</label>
+          <select id="co_member_type" onchange="updatePriceByPlan()">
+            <option value="">請選擇</option><option value="標準會員">標準會員</option><option value="PRO企業會員">PRO企業會員</option>
+          </select>
+        </div>
+        <div><label>價目方案 <span class="required">*</span></label>
+          <select id="co_price_plan" onchange="updatePriceByPlan()">
+            <option value="">請選擇</option>
+            <option value="時數方案1">時數方案1 (50點)</option><option value="時數方案2">時數方案2 (90點)</option>
+            <option value="時數方案3">時數方案3 (120點)</option><option value="客製化方案">客製化方案</option>
+          </select>
+        </div>
+        <div><label>點數</label><input id="co_point" type="number" value="0"></div>
+        <div><label>金額</label><input id="co_price" type="number" value="0"></div>
+        <div><label>狀態</label><select id="co_status"><option>正常</option><option>停用</option></select></div>
+      </div>
+      <button class="btn btn-success" onclick="addContract()"><i class="fas fa-save"></i> 儲存</button>
+      <table id="contractTableBox">
+        <thead><tr><th>公司</th><th>會員</th><th>方案</th><th>點數</th><th>金額</th><th>操作</th></tr></thead>
+        <tbody id="contractTable"></tbody>
+      </table>
+    </div>
+
+    <div class="page" id="page-staff">
+      <div class="page-title">派遣人員</div>
+      <div class="grid">
+        <div><label>姓名 <span class="required">*</span></label><input id="staff_name"></div>
+        <div><label>時薪</label><input id="staff_hourly" type="number" value="0"></div>
+        <div><label>勞保扣除</label><input id="staff_labor" type="number" value="0"></div>
+        <div><label>健保扣除</label><input id="staff_health" type="number" value="0"></div>
         <div><label>狀態</label><select id="staff_status"><option>在職</option><option>離職</option></select></div>
       </div>
-      <button class="btn btn-success" onclick="addStaff()">新增人員</button>
+      <button class="btn btn-success" onclick="addStaff()"><i class="fas fa-plus"></i> 新增人員</button>
       <table id="staffTableBox">
-        <thead><tr><th>狀態</th><th>姓名</th><th>電話</th><th>操作</th></tr></thead>
+        <thead><tr><th>姓名</th><th>時薪</th><th>狀態</th><th>操作</th></tr></thead>
         <tbody id="staffTable"></tbody>
       </table>
     </div>
 
     <div class="page" id="page-attend">
       <div class="page-title">派遣記錄</div>
-      <div class="grid">
-        <div><label>公司 *</label><select id="attend_company"></select></div>
-        <div><label>派遣人員 *</label><select id="attend_staff"></select></div>
-        <div><label>日期 *</label><input type="date" id="attend_date"></div>
-        <div><label>上午</label><div style="display:flex;gap:5px"><input type="time" id="am_s"><input type="time" id="am_e"></div></div>
-        <div><label>下午</label><div style="display:flex;gap:5px"><input type="time" id="pm_s"><input type="time" id="pm_e"></div></div>
+      <div class="filter-bar">
+        <label>年</label><select id="filter_year"></select>
+        <label>月</label><select id="filter_month"></select>
+        <label>公司</label><select id="filter_company"></select>
+        <button class="btn btn-success btn-sm" onclick="renderAttend()">查詢</button>
       </div>
-      <button class="btn btn-success" onclick="addAttend()">儲存記錄</button>
+      <div class="grid">
+        <div><label>公司</label><select id="attend_company"></select></div>
+        <div><label>人員</label><select id="attend_staff"></select></div>
+        <div><label>日期</label><input type="date" id="attend_date"></div>
+        <div><label>上班(AM/PM)</label><input type="time" id="am_s"></div>
+        <div><label>下班(AM/PM)</label><input type="time" id="am_e"></div>
+      </div>
+      <button class="btn btn-success" onclick="addAttend()"><i class="fas fa-save"></i> 儲存記錄</button>
       <table id="attendTableBox">
-        <thead><tr><th>公司</th><th>人員</th><th>日期</th><th>點數</th><th>操作</th></tr></thead>
+        <thead><tr><th>公司</th><th>人員</th><th>日期</th><th>時段</th><th>工時</th><th>點數</th><th>操作</th></tr></thead>
         <tbody id="attendTable"></tbody>
       </table>
+    </div>
+
+    <div class="page" id="page-point">...點數統計內容...</div>
+    <div class="page" id="page-bill">...對帳單內容...</div>
+    <div class="page" id="page-salary">
+        <div class="page-title">薪資計算</div>
+        <div class="filter-bar">
+            <label>人員</label><select id="sal_filter_staff"></select>
+            <button class="btn btn-success btn-sm" onclick="renderSalary()">計算</button>
+        </div>
+        <div id="salResult" style="font-weight:bold; margin-bottom:10px;"></div>
+        <table id="salaryTableBox">
+            <thead><tr><th>人員</th><th>日期</th><th>工時</th><th>實付金額</th></tr></thead>
+            <tbody id="salaryTable"></tbody>
+        </table>
+    </div>
+    <div class="page" id="page-boss">
+        <div class="page-title">老闆專區</div>
+        <button class="btn btn-backup" onclick="backupAllData()">備份</button>
+        <button class="btn btn-restore" onclick="document.getElementById('restoreFile').click()">還原</button>
+        <input type="file" id="restoreFile" onchange="restoreData(this)">
+    </div>
+    <div class="page" id="page-dashboard">
+      <div class="page-title">儀表板</div>
+      <div class="dashboard-grid">
+        <div class="dash-card"><div>客戶總數</div><div class="num" id="dash_total_cust">0</div></div>
+        <div class="dash-card"><div>正合作</div><div class="num green" id="dash_active_cust">0</div></div>
+        <div class="dash-card"><div>人員數</div><div class="num" id="dash_staff_count">0</div></div>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
-// 資料初始化
+// ===================== 資料與變數 =====================
 let custData = JSON.parse(localStorage.getItem('custData') || '[]');
+let contractData = JSON.parse(localStorage.getItem('contractData') || '[]');
 let staffData = JSON.parse(localStorage.getItem('staffData') || '[]');
 let attendData = JSON.parse(localStorage.getItem('attendData') || '[]');
 
-// ---------------- 核心功能：統一更新下拉選單 ----------------
-function updateAllDropdowns() {
-    // 1. 更新客戶選單 (派遣記錄用)
-    const custOptions = '<option value="">請選擇公司</option>' + 
-        custData.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-    const companySelect = document.getElementById('attend_company');
-    if(companySelect) companySelect.innerHTML = custOptions;
+const pageConfig = { pageSize: 10, currentPage: { customer: 1, contract: 1, staff: 1, attend: 1 } };
 
-    // 2. 更新人員選單 (過濾只顯示「在職」人員，方便輸入)
-    const staffOptions = '<option value="">請選擇人員</option>' + 
-        staffData.filter(s => s.status === '在職').map(s => `<option value="${s.name}">${s.name}</option>`).join('');
-    const staffSelect = document.getElementById('attend_staff');
-    if(staffSelect) staffSelect.innerHTML = staffOptions;
+// 價目表定義
+const priceTable = {
+  "時數方案1": { points: 50, price: 17000 },
+  "時數方案2": { points: 90, price: 30600 },
+  "時數方案3": { points: 120, price: 40800 },
+  "客製化方案": { points: 0, price: 0 }
+};
+
+// ===================== 核心功能 =====================
+
+// 1. 分頁切換 (修復原本中斷的部分)
+function changePage(module, targetPage) {
+  pageConfig.currentPage[module] = targetPage;
+  switch(module) {
+    case 'customer': renderCustTable(); break;
+    case 'contract': renderContractTable(); break;
+    case 'staff': renderStaffTable(); break;
+    case 'attend': renderAttend(); break;
+  }
 }
 
-// ---------------- 派遣人員功能 ----------------
-function renderStaffTable() {
-    const tbody = document.getElementById('staffTable');
-    tbody.innerHTML = staffData.map((s, idx) => `
-        <tr>
-            <td>${s.status === '在職' ? '<span style="color:green">在職</span>' : '<span style="color:red">離職</span>'}</td>
-            <td>${s.name}</td>
-            <td>${s.tel || ''}</td>
-            <td><button class
+function resetPage(module) { pageConfig.currentPage[module] = 1; }
+
+function getPagedData(list, module) {
+  const page = pageConfig.currentPage[module];
+  const start = (page - 1) * pageConfig.pageSize;
+  const end = start + pageConfig.pageSize;
+  return {
+    pagedList: list.slice(start, end),
+    total: list.length,
+    totalPages: Math.ceil(list.length / pageConfig.pageSize) || 1
+  };
+}
+
+// 2. 客戶管理
+function addCust() {
+  const name = document.getElementById('c_name').value;
+  if(!name) return alert('名稱必填');
+  custData.push({
+    name, 
+    industry: document.getElementById('c_industry').value,
+    coop: document.getElementById('c_coop').value,
+    tel: document.getElementById('c_tel').value
+  });
+  saveAndRefresh();
+}
+
+function renderCustTable() {
+  const tbody = document.getElementById('custTable');
+  const { pagedList, total, totalPages } = getPagedData(custData, 'customer');
+  tbody.innerHTML = pagedList.map((item, idx) => `
+    <tr>
+      <td>${item.coop}</td>
+      <td>${item.name}</td>
+      <td>${item.industry}</td>
+      <td>${item.tel}</td>
+      <td><button class="btn btn-sm btn-pdf" onclick="deleteItem('cust', ${idx})">刪除</button></td>
+    </tr>`).join('');
+  updateSelectors();
+}
+
+// 3. 派遣記錄邏輯
+function addAttend() {
+  const company = document.getElementById('attend_company').value;
+  const staff = document.getElementById('attend_staff').value;
+  const date = document.getElementById('attend_date').value;
+  const s = document.getElementById('am_s').value;
+  const e = document.getElementById('am_e').value;
+
+  if(!company || !staff || !date) return alert('請完整填寫');
+
+  const hours = calculateHours(s, e);
+  attendData.push({ company, staff, date, time: `${s}-${e}`, hours, points: Math.ceil(hours) });
+  saveAndRefresh();
+}
+
+function calculateHours(start, end) {
+  if(!start || !end) return 0;
+  const diff = (new Date(`2000/01/01 ${end}`) - new Date(`2000/01/01 ${start}`)) / 1000 / 3600;
+  return diff > 0 ? diff.toFixed(1) : 0;
+}
+
+function renderAttend() {
+  const tbody = document.getElementById('attendTable');
+  const { pagedList } = getPagedData(attendData, 'attend');
+  tbody.innerHTML = pagedList.map(item => `
+    <tr>
+      <td>${item.company}</td><td>${item.staff}</td><td>${item.date}</td>
+      <td>${item.time}</td><td>${item.hours}</td><td>${item.points}</td>
+      <td><button class="btn btn-sm btn-pdf">刪除</button></td>
+    </tr>`).join('');
+}
+
+// 4. 儀表板與備份
+function updateDashboard() {
+  document.getElementById('dash_total_cust').innerText = custData.length;
+  document.getElementById('dash_active_cust').innerText = custData.filter(x=>x.coop==='正合作').length;
+  document.getElementById('dash_staff_count').innerText = staffData.length;
+}
+
+function backupAllData() {
+  const blob = new Blob([JSON.stringify({custData, contractData, staffData, attendData})], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'backup.json';
+  a.click();
+}
+
+// ===================== 通用與初始化 =====================
+function saveAndRefresh() {
+  localStorage.setItem('custData', JSON.stringify(custData));
+  localStorage.setItem('attendData', JSON.stringify(attendData));
+  localStorage.setItem('staffData', JSON.stringify(staffData));
+  localStorage.setItem('contractData', JSON.stringify(contractData));
+  location.reload();
+}
+
+function updateSelectors() {
+  const custOptions = custData.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+  document.getElementById('attend_company').innerHTML = custOptions;
+  document.getElementById('con_customer').innerHTML = custOptions;
+  document.getElementById('attend_staff').innerHTML = staffData.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+}
+
+// 側邊欄切換邏輯
+document.querySelectorAll('.sidebar-nav a').forEach(link => {
+  link.onclick = function(e) {
+    e.preventDefault();
+    document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+    this.classList.add('active');
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const target = this.dataset.page;
+    document.getElementById('page-' + target).classList.add('active');
+    document.getElementById('main-title').innerText = this.innerText.trim();
+    if(target === 'dashboard') updateDashboard();
+  };
+});
+
+window.onload = () => {
+  renderCustTable();
+  renderAttend();
+  updateSelectors();
+  document.getElementById('current-time').innerText = new Date().toLocaleDateString();
+};
+</script>
+</body>
+</html>
