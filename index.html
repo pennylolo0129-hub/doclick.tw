@@ -5,53 +5,70 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>客戶及派遣人員管理系統 V1.0</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-  /* 樣式保持一致 */
-  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Microsoft JhengHei', sans-serif; }
-  body { background-color: #f7f8fa; color: #333; }
+  /* 介面完全恢復原始樣式 */
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Microsoft JhengHei', 'Arial', sans-serif; }
+  body { background-color: #f7f8fa; color: #333; line-height: 1.6; }
   .app-container { display: flex; min-height: 100vh; }
-  .sidebar { width: 220px; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.05); position: fixed; height: 100vh; }
-  .sidebar-nav { list-style: none; padding-top: 20px; }
-  .sidebar-nav a { display: block; padding: 15px 20px; color: #555; text-decoration: none; border-left: 3px solid transparent; }
-  .sidebar-nav a.active { background: #f0f8f4; color: #2d9d5c; border-left-color: #2d9d5c; }
+  .sidebar { width: 220px; background-color: #ffffff; box-shadow: 0 0 10px rgba(0,0,0,0.05); padding: 20px 0; position: fixed; height: 100vh; overflow-y: auto; z-index: 10; }
+  .sidebar-header { padding: 0 20px 20px; border-bottom: 1px solid #f0f0f0; margin-bottom: 10px; }
+  .sidebar-header h1 { font-size: 18px; color: #2d9d5c; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .sidebar-nav { list-style: none; }
+  .sidebar-nav li { margin: 5px 0; }
+  .sidebar-nav a { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: #555; text-decoration: none; border-left: 3px solid transparent; transition: all 0.2s ease; }
+  .sidebar-nav a:hover, .sidebar-nav a.active { background-color: #f0f8f4; color: #2d9d5c; border-left-color: #2d9d5c; }
   .main-content { flex: 1; margin-left: 220px; padding: 20px; }
-  .page { display: none; background: white; border-radius: 8px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+  .page-header { background-color: #ffffff; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+  .page { display: none; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); padding: 25px; margin-bottom: 20px; }
   .page.active { display: block; }
-  /* 篩選列樣式 */
+  .page-title { font-size: 16px; font-weight: 600; margin-bottom: 20px; color: #444; padding-bottom: 10px; border-bottom: 1px solid #f0f0f0; }
   .filter-bar { background-color: #f9f9f9; padding: 15px; border-radius: 6px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
   .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
   .grid div { display: flex; flex-direction: column; }
-  .grid label { margin-bottom: 5px; font-size: 14px; color: #666; }
-  input, select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
-  button.btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; background: #2d9d5c; color: white; }
-  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-  th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #eee; }
-  td { padding: 12px; border-bottom: 1px solid #f0f0f0; }
-  .pagination { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+  .grid label { margin-bottom: 6px; font-weight: 500; font-size: 14px; color: #555; }
+  .grid input, .grid select { padding: 8px 10px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 14px; }
+  button.btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px; margin-bottom: 10px; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: background-color 0.2s; }
+  .btn-success { background: #2d9d5c; color: white; }
+  .btn-warning { background: #f59e0b; color: white; }
+  .btn-pdf { background: #dc2626; color: white; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+  table th { padding: 12px 10px; background: #f8f9fa; color: #444; font-weight: 600; text-align: left; border-bottom: 2px solid #e0e0e0; }
+  table td { padding: 10px; border-bottom: 1px solid #f0f0f0; color: #555; }
+  .pagination { margin-top: 20px; display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
+  .pagination button { padding: 6px 12px; border: 1px solid #e0e0e0; background: white; cursor: pointer; border-radius: 4px; }
 </style>
 </head>
 <body>
 
 <div class="app-container">
   <div class="sidebar">
+    <div class="sidebar-header">
+      <h1><i class="fas fa-users"></i> 派遣管理系統</h1>
+    </div>
     <ul class="sidebar-nav">
       <li><a href="#" data-page="customer"><i class="fas fa-building"></i> 客戶資料</a></li>
+      <li><a href="#" data-page="contract"><i class="fas fa-file-contract"></i> 合約方案</a></li>
       <li><a href="#" data-page="staff" class="active"><i class="fas fa-user"></i> 派遣人員</a></li>
       <li><a href="#" data-page="attend"><i class="fas fa-clock"></i> 派遣記錄</a></li>
+      <li><a href="#" data-page="point"><i class="fas fa-calculator"></i> 點數統計</a></li>
+      <li><a href="#" data-page="boss"><i class="fas fa-user-tie"></i> 老闆專區</a></li>
     </ul>
   </div>
 
   <div class="main-content">
+    <div class="page-header">
+      <h2 id="main-title">派遣人員管理</h2>
+    </div>
+
     <div class="page active" id="page-staff">
-      <h2 style="margin-bottom:20px;">派遣人員</h2>
-      
+      <div class="page-title">派遣人員</div>
       <div class="filter-bar">
         <label>人員：</label>
         <select id="staff_filter_name" onchange="resetPage('staff'); renderStaffTable()">
           <option value="all">全部</option>
         </select>
-
         <label>狀態：</label>
         <select id="staff_filter_status" onchange="resetPage('staff'); renderStaffTable()">
           <option value="all">全部</option>
@@ -59,52 +76,72 @@
           <option value="離職">離職</option>
         </select>
       </div>
-
       <div class="grid">
-        <div><label>姓名 *</label><input id="staff_name"></div>
-        <div><label>電話</label><input id="staff_tel"></div>
+        <div><label>人員姓名 *</label><input id="staff_name"></div>
+        <div><label>聯絡電話</label><input id="staff_tel"></div>
         <div><label>狀態</label><select id="staff_status"><option>在職</option><option>離職</option></select></div>
       </div>
-      <button class="btn" onclick="addStaff()">新增人員</button>
-
+      <button class="btn btn-success" onclick="addStaff()">新增人員</button>
       <table id="staffTableBox">
         <thead><tr><th>狀態</th><th>姓名</th><th>電話</th><th>操作</th></tr></thead>
         <tbody id="staffTable"></tbody>
       </table>
     </div>
 
-    <div class="page" id="page-customer"><h2>客戶資料</h2></div>
-    <div class="page" id="page-attend"><h2>派遣記錄</h2></div>
+    <div class="page" id="page-customer">
+        <div class="page-title">客戶資料管理</div>
+        <div class="grid">
+            <div><label>客戶名稱 *</label><input id="c_name"></div>
+            <div><label>行業別</label><input id="c_industry"></div>
+            <div><label>聯絡人</label><input id="c_user"></div>
+            <div><label>地址</label><input id="c_addr"></div>
+        </div>
+        <button class="btn btn-success">新增客戶</button>
+        <table id="custTableBox"><thead><tr><th>狀態</th><th>名稱</th><th>行業</th><th>聯絡人</th></tr></thead><tbody></tbody></table>
+    </div>
+    
+    <div class="page" id="page-contract">
+        <div class="page-title">合約方案</div>
+        <table id="contractTableBox"><thead><tr><th>公司</th><th>點數</th><th>狀態</th></tr></thead><tbody></tbody></table>
+    </div>
+
+    <div class="page" id="page-attend">
+        <div class="page-title">派遣記錄</div>
+        <div class="grid">
+            <div><label>公司 *</label><select id="attend_company"></select></div>
+            <div><label>人員 *</label><select id="attend_staff"></select></div>
+            <div><label>日期 *</label><input type="date" id="attend_date"></div>
+        </div>
+        <button class="btn btn-success">儲存記錄</button>
+        <table id="attendTableBox"><thead><tr><th>公司</th><th>人員</th><th>日期</th><th>點數</th></tr></thead><tbody></tbody></table>
+    </div>
   </div>
 </div>
 
 <script>
-// 資料初始化
+// ===================== 資料與邏輯 =====================
 let staffData = JSON.parse(localStorage.getItem('staffData') || '[]');
 const pageConfig = { pageSize: 15, currentPage: { staff: 1 } };
 
-// --- 核心優化：更新選單 ---
-function updateStaffDropdown() {
-    const filterSelect = document.getElementById('staff_filter_name');
-    if(!filterSelect) return;
-    
-    // 生成選項：全部 + 所有人名
+// 更新下拉選單內容
+function updateStaffFilter() {
+    const filter = document.getElementById('staff_filter_name');
+    if(!filter) return;
     let html = '<option value="all">全部</option>';
     staffData.forEach(s => {
         html += `<option value="${s.name}">${s.name}</option>`;
     });
-    filterSelect.innerHTML = html;
+    filter.innerHTML = html;
 }
 
-// --- 渲染表格 ---
+// 渲染表格 (支援篩選)
 function renderStaffTable() {
-    const nameFilter = document.getElementById('staff_filter_name').value;
-    const statusFilter = document.getElementById('staff_filter_status').value;
+    const nameVal = document.getElementById('staff_filter_name').value;
+    const statusVal = document.getElementById('staff_filter_status').value;
 
     const filtered = staffData.filter(s => {
-        const mName = (nameFilter === 'all' || s.name === nameFilter);
-        const mStatus = (statusFilter === 'all' || s.status === statusFilter);
-        return mName && mStatus;
+        return (nameVal === 'all' || s.name === nameVal) && 
+               (statusVal === 'all' || s.status === statusVal);
     });
 
     const start = (pageConfig.currentPage.staff - 1) * pageConfig.pageSize;
@@ -113,9 +150,9 @@ function renderStaffTable() {
     document.getElementById('staffTable').innerHTML = paged.map((s, idx) => `
         <tr>
             <td style="color:${s.status==='在職'?'#2d9d5c':'#dc2626'}">${s.status}</td>
-            <td><strong>${s.name}</strong></td>
+            <td>${s.name}</td>
             <td>${s.tel || ''}</td>
-            <td><button class="btn" style="background:#dc2626" onclick="deleteStaff(${start + idx})">刪除</button></td>
+            <td><button class="btn btn-pdf" style="padding:4px 8px" onclick="deleteStaff(${start + idx})">刪除</button></td>
         </tr>
     `).join('');
     
@@ -125,28 +162,26 @@ function renderStaffTable() {
 function addStaff() {
     const name = document.getElementById('staff_name').value.trim();
     if(!name) return alert('請輸入姓名');
-    
     staffData.push({
         name: name,
         tel: document.getElementById('staff_tel').value,
         status: document.getElementById('staff_status').value
     });
-    
     document.getElementById('staff_name').value = '';
     document.getElementById('staff_tel').value = '';
-    saveAll();
+    saveAndRefresh();
 }
 
 function deleteStaff(idx) {
     if(confirm('確定刪除？')) {
         staffData.splice(idx, 1);
-        saveAll();
+        saveAndRefresh();
     }
 }
 
-function saveAll() {
+function saveAndRefresh() {
     localStorage.setItem('staffData', JSON.stringify(staffData));
-    updateStaffDropdown(); // 儲存後立即更新選單內容
+    updateStaffFilter();
     renderStaffTable();
 }
 
@@ -178,12 +213,14 @@ document.querySelectorAll('.sidebar-nav a').forEach(link => {
         e.preventDefault();
         document.querySelectorAll('.page, .sidebar-nav a').forEach(el => el.classList.remove('active'));
         link.classList.add('active');
-        document.getElementById(`page-${link.dataset.page}`).classList.add('active');
+        const p = link.dataset.page;
+        document.getElementById(`page-${p}`).classList.add('active');
+        document.getElementById('main-title').innerText = link.innerText;
     };
 });
 
-// --- 初始化啟動 ---
-updateStaffDropdown();
+// 初始化
+updateStaffFilter();
 renderStaffTable();
 
 </script>
