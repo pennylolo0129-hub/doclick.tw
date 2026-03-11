@@ -554,7 +554,7 @@
           <table class="panel-table">
             <thead><tr><th>客戶名稱</th><th>剩餘點數</th><th>快速操作</th></tr></thead>
             <tbody id="dash_alert_table">
-              </tbody>
+            </tbody>
           </table>
         </div>
         
@@ -563,7 +563,7 @@
           <table class="panel-table">
             <thead><tr><th>派遣人員</th><th>客戶公司</th><th>時段</th></tr></thead>
             <tbody id="dash_today_table">
-              </tbody>
+            </tbody>
           </table>
         </div>
       </div>
@@ -765,6 +765,7 @@
       <div id="billSummary" style="margin-bottom:20px; font-size:16px; font-weight:bold;"></div>
       <button class="btn btn-excel" onclick="exportExcel('billTableBox','對帳單')"><i class="fas fa-file-excel"></i> 匯出 Excel</button>
       <button class="btn btn-pdf" onclick="exportPDF('billTableBox','對帳單')"><i class="fas fa-file-pdf"></i> 匯出 PDF</button>
+      <button class="btn btn-success" onclick="generateStatementPDF()"><i class="fas fa-file-invoice"></i> 一鍵生成客戶對帳單</button>
       <table id="billTableBox">
         <thead><tr><th>日期</th><th>人員</th><th>工時</th><th>使用點數</th><th>剩餘時數</th><th>原儲值點數</th></tr></thead>
         <tbody id="billTable"></tbody>
@@ -881,11 +882,11 @@ function getPagedData(list, module) {
 function renderPagination(module, total, totalPages) {
   const page = pageConfig.currentPage[module];
   const tableBox = document.getElementById(`${module}TableBox`);
-  if(!tableBox) return; // Dashboard 無分頁表單防錯處理
+  if(!tableBox) return;
+  // Dashboard 無分頁表單防錯處理
   
   const oldPager = tableBox.parentNode.querySelector('.pagination');
   if (oldPager) oldPager.remove();
-
   let html = `
   <div class="pagination">
     <button onclick="changePage('${module}', 1)" ${page===1 ? 'disabled' : ''}>首頁</button>
@@ -962,7 +963,6 @@ function changePage(module, targetPage) {
       const ccust = document.getElementById('boss_cust_filter').value;
       let arr = [];
       let cs = ccust ? custData.filter(x=>x.name===ccust) : custData;
-      
       cs.forEach(cc => {
         contractData.filter(co=>co.customer===cc.name).forEach(co => {
           const dispatchHours = attendData.filter(x=>
@@ -1031,7 +1031,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 });
-
 function updateCurrentTime() {
   const now = new Date();
   const timeStr = now.toLocaleString('zh-TW', {
@@ -1062,7 +1061,6 @@ function showPage(page, link) {
   // 切換導航激活狀態
   document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
   if (link) link.classList.add('active');
-  
   // 更新頁面標題
   const titleMap = {
     customer: '客戶資料管理',
@@ -1111,7 +1109,6 @@ function fillFilters() {
   });
   document.getElementById('boss_cust_filter').innerHTML = '<option value="" selected>全部客戶</option>';
   custData.forEach(c => document.getElementById('boss_cust_filter').innerHTML += `<option value="${c.name}">${c.name}</option>`);
-  
   document.querySelectorAll('#sal_filter_staff,#attend_staff').forEach(el => {
     el.innerHTML = '<option value="all" selected>全部人員</option><optgroup label="在職">';
     staffData.filter(s=>s.status==='在職').forEach(s => el.innerHTML += `<option value="${s.name}">${s.name}</option>`);
@@ -1314,7 +1311,7 @@ function addCust(){
   saveAll(); 
   resetPage('customer'); 
   renderCustTable(); 
-  clearCustForm(); 
+  clearCustForm();
   alert('新增成功');
 }
 
@@ -1837,7 +1834,6 @@ function renderSalary(){
   const ms=document.getElementById('sal_filter_month').value;
   let list=[];
   let totalSummary = { totalHour: 0, totalSalary: 0, totalLabor: 0, totalHealth: 0, totalNet: 0 };
-  
   if(s==='all'){
     list=attendData.filter(x=>
       (ys==='all'||x.date.startsWith(ys)) &&
@@ -1884,7 +1880,6 @@ function renderSalary(){
       <td>${net}</td>
     </tr>`;
   });
-  
   if(s==='all'){
     document.getElementById('salResult').innerHTML=`
       人員：全部人員 | 統計期間：${ys==='all'?'全部年份':ys}年${ms==='all'?'全部月份':ms+'月'} | 
@@ -1892,7 +1887,7 @@ function renderSalary(){
     `;
   }else{
     document.getElementById('salResult').innerHTML=`
-      人員：${s} | 統計期間：${ys==='all'?'全部年份':ys}年${ms==='all'?'全部月份':ms+'月'} | 
+      人員：${s} | 統計期間：${ys==='all'?'全部年份':ys}年${ms==='all'?'全部月份':ms+'月'} |
       總工時：${totalSummary.totalHour.toFixed(1)}小時 | 總薪資：${totalSummary.totalSalary.toFixed(0)}元
     `;
   }
@@ -1962,7 +1957,8 @@ function renderDashboard(){
   
   let pointGe50 = 0;
   let pointLt50 = 0;
-  let alertHtml = ''; // 儲存點數警示清單 HTML
+  let alertHtml = '';
+  // 儲存點數警示清單 HTML
   
   custData.forEach(cust=>{
     const contractPoints=contractData
@@ -2012,10 +2008,8 @@ function renderDashboard(){
   // 抓取今天的本地日期字串 YYYY-MM-DD
   const todayDate = new Date();
   const todayStr = todayDate.getFullYear() + '-' + String(todayDate.getMonth() + 1).padStart(2, '0') + '-' + String(todayDate.getDate()).padStart(2, '0');
-  
   const todayAttends = attendData.filter(x => x.date === todayStr);
   let todayHtml = '';
-  
   todayAttends.forEach(item => {
     const am = item.am_s && item.am_e ? `${item.am_s}-${item.am_e}` : '';
     const pm = item.pm_s && item.pm_e ? `${item.pm_s}-${item.pm_e}` : '';
@@ -2027,7 +2021,6 @@ function renderDashboard(){
       <td>${timeStr || '-'}</td>
     </tr>`;
   });
-
   const todayTableObj = document.getElementById('dash_today_table');
   if (todayTableObj) {
      todayTableObj.innerHTML = todayHtml || '<tr><td colspan="3" style="text-align:center; color:#999; padding: 15px;">今日暫無派遣記錄</td></tr>';
@@ -2051,7 +2044,8 @@ function exportExcel(tableId, fileName) {
 function exportPDF(tableId, fileName) {
   try {
     const element = document.getElementById(tableId);
-    if(!element) { alert('匯出失敗：找不到匯出表格'); return; }
+    if(!element) { alert('匯出失敗：找不到匯出表格'); return;
+    }
     const opt = {
       margin: 10,
       filename: `${fileName}_${new Date().toLocaleDateString()}.pdf`,
@@ -2065,6 +2059,135 @@ function exportPDF(tableId, fileName) {
     alert('PDF匯出失敗：' + e.message);
     console.error('PDF匯出錯誤:', e);
   }
+}
+
+// ===================== 一鍵生成客戶專屬對帳單 =====================
+function generateStatementPDF() {
+  const cb = document.getElementById('bill_filter_company').value;
+  const yb = document.getElementById('bill_filter_year').value;
+  const mb = document.getElementById('bill_filter_month').value;
+
+  if(!cb) {
+    alert('請先在上方過濾條件選擇「公司」，才能生成專屬對帳單！');
+    return;
+  }
+
+  // 1. 取得該公司的合約資料 (取最新的一筆)
+  const contracts = contractData.filter(x => x.customer === cb);
+  const contract = contracts.length > 0 ? contracts[contracts.length - 1] : {};
+  const planName = contract.price_plan || '無紀錄';
+  const signDate = contract.date || '無紀錄';
+  const totalPoints = Number(contract.point) || 0;
+
+  // 2. 取得該公司「歷史所有」派遣記錄 (用來計算真正剩餘點數)
+  const allUsedPoints = attendData.filter(x => x.company === cb).reduce((sum, item) => {
+    const hour = (+getHours(item.am_s, item.am_e)) + (+getHours(item.pm_s, item.pm_e));
+    return sum + Math.ceil(hour);
+  }, 0);
+  const remainPoints = totalPoints - allUsedPoints;
+
+  // 3. 取得「當期選定月份」的派遣記錄 (用來列出明細)
+  let periodAttends = attendData.filter(x => 
+    x.company === cb &&
+    (yb === 'all' || x.date.startsWith(yb)) &&
+    (mb === 'all' || x.date.slice(5,7) === String(mb).padStart(2,'0'))
+  );
+  
+  // 依日期排序
+  periodAttends.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  // 4. 建立 PDF 專用的隱藏排版 (A4 比例)
+  const printArea = document.createElement('div');
+  printArea.style.padding = '40px';
+  printArea.style.fontFamily = "'Microsoft JhengHei', sans-serif";
+  printArea.style.color = '#333';
+  printArea.style.backgroundColor = '#fff';
+
+  // 組合明細表格 HTML
+  let attendHtml = '';
+  if(periodAttends.length > 0) {
+     periodAttends.forEach(item => {
+       const hour = ((+getHours(item.am_s, item.am_e)) + (+getHours(item.pm_s, item.pm_e))).toFixed(1);
+       const pt = Math.ceil(+hour);
+       attendHtml += `
+         <tr>
+           <td style="border:1px solid #ddd; padding:10px; text-align:center;">${item.date}</td>
+           <td style="border:1px solid #ddd; padding:10px; text-align:center;">${item.staff}</td>
+           <td style="border:1px solid #ddd; padding:10px; text-align:center;">${hour}</td>
+           <td style="border:1px solid #ddd; padding:10px; text-align:center;">${pt}</td>
+         </tr>
+       `;
+     });
+  } else {
+     attendHtml = `<tr><td colspan="4" style="border:1px solid #ddd; padding:15px; text-align:center; color:#666;">本期無派遣紀錄</td></tr>`;
+  }
+
+  const periodText = (yb==='all' && mb==='all') ? '全部歷史期間' : `${yb!=='all'?yb+'年':''}${mb!=='all'?mb+'月':''}`;
+
+  // 注入排版內容 (包含頂部資訊、統計數據、明細與底部簽章區塊)
+  printArea.innerHTML = `
+    <div style="text-align:center; margin-bottom:30px; border-bottom: 2px solid #2d9d5c; padding-bottom: 15px;">
+        <h2 style="font-size:26px; margin:0; color:#2d9d5c; letter-spacing: 2px;">愜易居 - 客戶服務對帳單</h2>
+    </div>
+    
+    <div style="display: flex; justify-content: space-between; margin-bottom: 25px; font-size:15px; line-height:1.8;">
+        <div>
+            <p style="margin:5px 0;"><strong>客戶名稱：</strong>${cb}</p>
+            <p style="margin:5px 0;"><strong>對帳期間：</strong>${periodText}</p>
+        </div>
+        <div>
+            <p style="margin:5px 0;"><strong>購買方案：</strong>${planName}</p>
+            <p style="margin:5px 0;"><strong>合約日期：</strong>${signDate}</p>
+        </div>
+    </div>
+
+    <div style="background-color:#f0f8f4; padding:15px; border-radius:6px; margin-bottom:25px; display:flex; justify-content:space-around; text-align:center; font-size:16px;">
+        <div>購買總點數<br><strong style="font-size:22px; color:#333;">${totalPoints}</strong></div>
+        <div>累計已用點數<br><strong style="font-size:22px; color:#555;">${allUsedPoints}</strong></div>
+        <div>當前剩餘點數<br><strong style="font-size:22px; color:${remainPoints<0?'#dc2626':'#2d9d5c'};">${remainPoints}</strong></div>
+    </div>
+
+    <h3 style="font-size:16px; margin-bottom:10px; color:#444; border-left: 4px solid #2d9d5c; padding-left: 8px;">派遣明細</h3>
+    <table style="width:100%; border-collapse:collapse; font-size:14px; margin-bottom:30px;">
+        <thead>
+            <tr style="background-color:#f9f9f9; color:#555;">
+                <th style="border:1px solid #ddd; padding:12px; width:25%;">派遣日期</th>
+                <th style="border:1px solid #ddd; padding:12px; width:25%;">派遣人員</th>
+                <th style="border:1px solid #ddd; padding:12px; width:25%;">工時 (小時)</th>
+                <th style="border:1px solid #ddd; padding:12px; width:25%;">扣除點數</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${attendHtml}
+        </tbody>
+    </table>
+    
+    <div style="margin-top: 60px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 15px; color: #333;">
+        <div style="width: 40%;">
+            <p style="margin-bottom: 45px; font-weight: bold;">客戶確認簽章：</p>
+            <div style="border-bottom: 1px solid #666; width: 100%;"></div>
+            <p style="margin-top: 8px; font-size: 13px; color: #666;">確認日期：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;年&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;月&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;日</p>
+        </div>
+        <div style="width: 40%; text-align: left;">
+            <p style="margin-bottom: 45px; font-weight: bold;">愜易居 經辦人簽章：</p>
+            <div style="border-bottom: 1px solid #666; width: 100%;"></div>
+            <p style="margin-top: 8px; font-size: 13px; color: #888; text-align: right;">產製日期：${new Date().toLocaleDateString('zh-TW')}</p>
+        </div>
+    </div>
+  `;
+
+  // 5. 呼叫 html2pdf 進行輸出
+  const opt = {
+    margin: 15,
+    filename: `${cb}_服務對帳單_${new Date().getTime()}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  html2pdf().set(opt).from(printArea).save().then(() => {
+     alert('專屬對帳單已成功下載！');
+  });
 }
 </script>
 </body>
