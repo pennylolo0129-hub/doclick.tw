@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>派遣人員管理系統 V1.0</title>
+<title>客戶及派遣人員管理系統 V1.0</title>
 <!-- 引入Excel匯出庫 -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <!-- 引入PDF匯出庫 -->
@@ -235,7 +235,7 @@
     border-color: #2d9d5c;
   }
 
-  /* 按鈕樣式 - 增強點擊體驗 */
+  /* 按鈕樣式 */
   button.btn {
     padding: 8px 16px;
     border: none;
@@ -248,18 +248,7 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    transition: all 0.2s;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
-
-  button.btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-  }
-
-  button.btn:active {
-    transform: translateY(0);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    transition: background-color 0.2s;
   }
 
   .btn-success {
@@ -319,15 +308,6 @@
   .btn-sm {
     padding: 4px 8px;
     font-size: 12px;
-    cursor: pointer;
-  }
-
-  /* 禁用按鈕樣式 */
-  button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none !important;
-    box-shadow: none !important;
   }
 
   /* 表格樣式 */
@@ -373,7 +353,6 @@
     cursor: pointer;
     border-radius: 4px;
     font-size: 14px;
-    transition: all 0.2s;
   }
 
   .pagination button:hover:not(:disabled) {
@@ -496,7 +475,7 @@
   <!-- 側邊導航欄 -->
   <div class="sidebar">
     <div class="sidebar-header">
-      <h1><i class="fas fa-users"></i> 客戶及派遣人員管理系統</h1>
+      <h1><i class="fas fa-users"></i> 派遣人員管理系統</h1>
     </div>
     <ul class="sidebar-nav">
       <li><a href="#" data-page="customer" class="active"><i class="fas fa-building"></i> 客戶資料</a></li>
@@ -993,12 +972,6 @@ document.addEventListener('DOMContentLoaded', function () {
       e.preventDefault();
     });
   });
-  
-  // 確保所有按鈕可點擊 - 增強初始化
-  setTimeout(() => {
-    fillFilters();
-    renderAll();
-  }, 100);
 });
 
 // 更新當前時間
@@ -1053,11 +1026,6 @@ function showPage(page, link) {
   if (page === 'contract') clearContractForm();
   if (page === 'staff') clearStaffForm();
   if (page === 'attend') clearAttendForm();
-  
-  // 確保頁面切換後按鈕功能正常
-  setTimeout(() => {
-    renderAll();
-  }, 50);
 }
 
 function renderAll() {
@@ -1278,35 +1246,6 @@ function checkStaffPointAlert(name){
   if(hit) alert(`⚠️人員「${name}」累積點數 ${p} 點，已達 ${hit} 點門檻`);
 }
 
-// ===================== 匯出功能 =====================
-function exportExcel(tableId, fileName) {
-  try {
-    const table = document.getElementById(tableId);
-    const wb = XLSX.utils.table_to_book(table, { sheet: fileName });
-    XLSX.writeFile(wb, `${fileName}_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`);
-  } catch (e) {
-    alert('匯出Excel失敗：' + e.message);
-    console.error('Excel匯出錯誤:', e);
-  }
-}
-
-function exportPDF(tableId, fileName) {
-  try {
-    const element = document.getElementById(tableId);
-    const opt = {
-      margin: 10,
-      filename: `${fileName}_${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-    };
-    html2pdf().set(opt).from(element).save();
-  } catch (e) {
-    alert('匯出PDF失敗：' + e.message);
-    console.error('PDF匯出錯誤:', e);
-  }
-}
-
 // ===================== 客戶相關函數 =====================
 function renderCustTable(){
   const fc = document.getElementById('cust_filter_company').value;
@@ -1330,8 +1269,8 @@ function renderCustTable(){
       <td>${item.url||'-'}</td>
       <td>${item.remark||'-'}</td>
       <td>
-        <button class="btn btn-sm btn-warning" onclick="editCust(${idx})"><i class="fas fa-edit"></i> 修改</button>
-        <button class="btn btn-sm btn-pdf" onclick="delCust(${idx})"><i class="fas fa-trash"></i> 刪除</button>
+        <button class="btn-sm btn-warning" onclick="editCust(${idx})"><i class="fas fa-edit"></i> 修改</button>
+        <button class="btn-sm btn-pdf" onclick="delCust(${idx})"><i class="fas fa-trash"></i> 刪除</button>
       </td>
     </tr>`;
   });
@@ -1390,7 +1329,7 @@ function editCust(i){
 }
 
 function updateCust(){
-  if(editCustIndex < 0) return;
+  if(editCustIndex<0)return;
   const o = {
     name: document.getElementById('c_name').value.trim(),
     industry: document.getElementById('c_industry').value.trim(),
@@ -1400,4 +1339,803 @@ function updateCust(){
     tax: document.getElementById('c_tax').value.trim(),
     goods: document.getElementById('c_goods').value.trim(),
     account: document.getElementById('c_account').value.trim(),
-    pwd: document.getElementById('c_pwd
+    pwd: document.getElementById('c_pwd').value.trim(),
+    url: document.getElementById('c_url').value.trim(),
+    remark: document.getElementById('c_remark').value.trim(),
+    coop: document.getElementById('c_coop').value
+  };
+  if(!o.name){alert('請輸入客戶名稱');return;}
+  
+  // 新增：重複檢查（排除當前編輯項）
+  const duplicate = custData.some((x, idx) => x.name === o.name && idx !== editCustIndex);
+  if(duplicate) {
+    alert('此客戶名稱已存在，請使用其他名稱');
+    return;
+  }
+  
+  custData[editCustIndex] = o; 
+  saveAll(); 
+  resetPage('customer'); 
+  renderCustTable(); 
+  clearCustForm(); 
+  alert('修改成功');
+}
+
+function delCust(i){
+  if(!confirm('確定刪除？刪除後相關合約和記錄也將失效'))return;
+  custData.splice(i,1);
+  saveAll();
+  resetPage('customer');
+  renderCustTable();
+}
+
+function clearCustForm(){
+  document.getElementById('c_name').value='';
+  document.getElementById('c_industry').value='';
+  document.getElementById('c_user').value='';
+  document.getElementById('c_tel').value='';
+  document.getElementById('c_addr').value='';
+  document.getElementById('c_tax').value='';
+  document.getElementById('c_goods').value='';
+  document.getElementById('c_account').value='';
+  document.getElementById('c_pwd').value='';
+  document.getElementById('c_url').value='';
+  document.getElementById('c_remark').value='';
+  document.getElementById('c_coop').value='正合作';
+  editCustIndex=-1;
+  document.getElementById('btnUpdateCust').style.display='none';
+}
+
+// ===================== 合約相關函數 (移除方案名稱處理) =====================
+function renderContractTable(){
+  const fc = document.getElementById('contract_filter_company').value;
+  const fco = document.getElementById('contract_filter_coop').value;
+  const okCust = fco!=='all' ? custData.filter(x=>x.coop===fco).map(x=>x.name) : custData.map(x=>x.name);
+  let list = contractData.filter(x => (!fc || x.customer===fc) && okCust.includes(x.customer));
+  const {pagedList, total, totalPages} = getPagedData(list, 'contract');
+  let html='';
+  pagedList.forEach(item=>{
+    const idx = contractData.findIndex(x=>x.customer===item.customer&&x.price_plan===item.price_plan&&x.date===item.date);
+    html+=`<tr>
+      <td>${item.customer}</td>
+      <td>${custData.find(x=>x.name===item.customer)?.coop||'-'}</td>
+      <td>${item.service||'-'}</td>
+      <td>${item.member_type||'-'}</td>
+      <td>${item.price_plan||'-'}</td>
+      <td>${item.package_price||0}</td>
+      <td>${item.point_price||0}</td>
+      <td>${item.price||0}</td>
+      <td>${item.point||0}</td>
+      <td>${item.invoice_date||'-'}</td>
+      <td>${item.payment_date||'-'}</td>
+      <td>${item.date||'-'}</td>
+      <td>${item.status}</td>
+      <td>${item.remark||'-'}</td>
+      <td>
+        <button class="btn-sm btn-warning" onclick="editContract(${idx})"><i class="fas fa-edit"></i> 修改</button>
+        <button class="btn-sm btn-pdf" onclick="delContract(${idx})"><i class="fas fa-trash"></i> 刪除</button>
+      </td>
+    </tr>`;
+  });
+  document.getElementById('contractTable').innerHTML = html || '<tr><td colspan=15>無資料</td></tr>';
+  renderPagination('contract', total, totalPages); renderDashboard();
+}
+
+function addContract(){
+  const o={
+    customer: document.getElementById('con_customer').value,
+    service: document.getElementById('co_service').value.trim(),
+    date: document.getElementById('co_date').value,
+    member_type: document.getElementById('co_member_type').value,
+    price_plan: document.getElementById('co_price_plan').value,
+    package_price: document.getElementById('co_package_price').value,
+    point_price: document.getElementById('co_point_price').value,
+    price: document.getElementById('co_price').value,
+    point: document.getElementById('co_point').value,
+    invoice_date: document.getElementById('co_invoice_date').value,
+    payment_date: document.getElementById('co_payment_date').value,
+    remark: document.getElementById('co_remark').value.trim(),
+    status: document.getElementById('co_status').value
+  };
+  if(!o.customer||!o.price_plan){
+    alert('請填公司與價目方案');
+    return;
+  }
+  
+  // 新增：必填欄位驗證
+  if(!o.date) {
+    alert('請選擇簽約日期');
+    return;
+  }
+  
+  contractData.push(o);
+  saveAll();
+  resetPage('contract');
+  renderContractTable();
+  clearContractForm();
+  alert('儲存成功');
+}
+
+function editContract(i){
+  const d=contractData[i];
+  document.getElementById('con_customer').value=d.customer;
+  document.getElementById('co_service').value=d.service||'';
+  document.getElementById('co_date').value=d.date||'';
+  document.getElementById('co_member_type').value=d.member_type||'';
+  document.getElementById('co_price_plan').value=d.price_plan||'';
+  document.getElementById('co_package_price').value=d.package_price||'';
+  document.getElementById('co_point_price').value=d.point_price||'';
+  document.getElementById('co_price').value=d.price||0;
+  document.getElementById('co_point').value=d.point||0;
+  document.getElementById('co_invoice_date').value=d.invoice_date||'';
+  document.getElementById('co_payment_date').value=d.payment_date||'';
+  document.getElementById('co_remark').value=d.remark||'';
+  document.getElementById('co_status').value=d.status;
+  editContractIndex=i;
+  document.getElementById('btnUpdateContract').style.display='inline-block';
+}
+
+function updateContract(){
+  if(editContractIndex<0)return addContract();
+  const o={
+    customer: document.getElementById('con_customer').value,
+    service: document.getElementById('co_service').value.trim(),
+    date: document.getElementById('co_date').value,
+    member_type: document.getElementById('co_member_type').value,
+    price_plan: document.getElementById('co_price_plan').value,
+    package_price: document.getElementById('co_package_price').value,
+    point_price: document.getElementById('co_point_price').value,
+    price: document.getElementById('co_price').value,
+    point: document.getElementById('co_point').value,
+    invoice_date: document.getElementById('co_invoice_date').value,
+    payment_date: document.getElementById('co_payment_date').value,
+    remark: document.getElementById('co_remark').value.trim(),
+    status: document.getElementById('co_status').value
+  };
+  if(!o.customer||!o.price_plan){
+    alert('請填公司與價目方案');
+    return;
+  }
+  
+  contractData[editContractIndex]=o;
+  saveAll();
+  resetPage('contract');
+  renderContractTable();
+  clearContractForm();
+  alert('修改成功');
+}
+
+function delContract(i){
+  if(!confirm('確定刪除？刪除後相關點數統計將受影響'))return;
+  contractData.splice(i,1);
+  saveAll();
+  resetPage('contract');
+  renderContractTable();
+}
+
+function clearContractForm(){
+  document.getElementById('con_customer').value='';
+  document.getElementById('co_service').value='';
+  document.getElementById('co_date').value='';
+  document.getElementById('co_member_type').value='';
+  document.getElementById('co_price_plan').value='';
+  document.getElementById('co_package_price').value='';
+  document.getElementById('co_point_price').value='';
+  document.getElementById('co_price').value='0';
+  document.getElementById('co_point').value='0';
+  document.getElementById('co_invoice_date').value='';
+  document.getElementById('co_payment_date').value='';
+  document.getElementById('co_remark').value='';
+  document.getElementById('co_status').value='正常';
+  editContractIndex=-1;
+  document.getElementById('btnUpdateContract').style.display='none';
+}
+
+// ===================== 人員相關函數 =====================
+function renderStaffTable(){
+  const fs=document.getElementById('staff_filter_status').value;
+  let list=staffData.filter(x=>fs==='all'||x.status===fs);
+  const {pagedList, total, totalPages}=getPagedData(list,'staff');
+  let html='';
+  pagedList.forEach(item=>{
+    const idx=staffData.findIndex(x=>x.name===item.name);
+    const tp=getStaffTotalPoint(item.name);
+    const cls=getPointAlertClass(tp);
+    html+=`<tr>
+      <td>${item.name}</td>
+      <td>${item.tel||'-'}</td>
+      <td>${item.addr||'-'}</td>
+      <td>${item.id||'-'}</td>
+      <td>${item.hourly||0}</td>
+      <td>${item.labor||0}</td>
+      <td>${item.health||0}</td>
+      <td>${item.remark||'-'}</td>
+      <td>${item.status}</td>
+      <td class="${cls}">${tp}</td>
+      <td>
+        <button class="btn-sm btn-warning" onclick="editStaff(${idx})"><i class="fas fa-edit"></i> 修改</button>
+        <button class="btn-sm btn-pdf" onclick="delStaff(${idx})"><i class="fas fa-trash"></i> 刪除</button>
+      </td>
+    </tr>`;
+  });
+  document.getElementById('staffTable').innerHTML=html||'<tr><td colspan=11>無資料</td></tr>';
+  renderPagination('staff',total,totalPages); fillFilters(); renderDashboard();
+}
+
+function addStaff(){
+  const o={
+    name: document.getElementById('staff_name').value.trim(),
+    tel: document.getElementById('staff_tel').value.trim(),
+    addr: document.getElementById('staff_addr').value.trim(),
+    id: document.getElementById('staff_id').value.trim(),
+    hourly: document.getElementById('staff_hourly').value,
+    labor: document.getElementById('staff_labor').value,
+    health: document.getElementById('staff_health').value,
+    remark: document.getElementById('staff_remark').value.trim(),
+    status: document.getElementById('staff_status').value
+  };
+  if(!o.name){alert('請輸入姓名');return;}
+  
+  // 新增：重複檢查
+  if(staffData.some(x => x.name === o.name)) {
+    alert('此人員姓名已存在，請使用其他姓名');
+    return;
+  }
+  
+  staffData.push(o);
+  saveAll();
+  resetPage('staff');
+  renderStaffTable();
+  clearStaffForm();
+  alert('新增成功');
+}
+
+function editStaff(i){
+  const d=staffData[i];
+  document.getElementById('staff_name').value=d.name;
+  document.getElementById('staff_tel').value=d.tel||'';
+  document.getElementById('staff_addr').value=d.addr||'';
+  document.getElementById('staff_id').value=d.id||'';
+  document.getElementById('staff_hourly').value=d.hourly||0;
+  document.getElementById('staff_labor').value=d.labor||0;
+  document.getElementById('staff_health').value=d.health||0;
+  document.getElementById('staff_remark').value=d.remark||'';
+  document.getElementById('staff_status').value=d.status;
+  editStaffIndex=i;
+  document.getElementById('btnUpdateStaff').style.display='inline-block';
+}
+
+function updateStaff(){
+  if(editStaffIndex<0)return;
+  const o={
+    name: document.getElementById('staff_name').value.trim(),
+    tel: document.getElementById('staff_tel').value.trim(),
+    addr: document.getElementById('staff_addr').value.trim(),
+    id: document.getElementById('staff_id').value.trim(),
+    hourly: document.getElementById('staff_hourly').value,
+    labor: document.getElementById('staff_labor').value,
+    health: document.getElementById('staff_health').value,
+    remark: document.getElementById('staff_remark').value.trim(),
+    status: document.getElementById('staff_status').value
+  };
+  if(!o.name){alert('請輸入姓名');return;}
+  
+  // 新增：重複檢查（排除當前編輯項）
+  const duplicate = staffData.some((x, idx) => x.name === o.name && idx !== editStaffIndex);
+  if(duplicate) {
+    alert('此人員姓名已存在，請使用其他姓名');
+    return;
+  }
+  
+  staffData[editStaffIndex]=o;
+  saveAll();
+  resetPage('staff');
+  renderStaffTable();
+  clearStaffForm();
+  alert('修改成功');
+}
+
+function delStaff(i){
+  const staffName = staffData[i].name;
+  const hasAttend = attendData.some(x => x.staff === staffName);
+  
+  if(hasAttend && !confirm('此人員有派遣記錄，刪除後相關記錄將無法對應，確定刪除？')) {
+    return;
+  }
+  
+  if(!confirm('確定刪除？'))return;
+  staffData.splice(i,1);
+  saveAll();
+  resetPage('staff');
+  renderStaffTable();
+}
+
+function clearStaffForm(){
+  document.getElementById('staff_name').value='';
+  document.getElementById('staff_tel').value='';
+  document.getElementById('staff_addr').value='';
+  document.getElementById('staff_id').value='';
+  document.getElementById('staff_hourly').value='0';
+  document.getElementById('staff_labor').value='0';
+  document.getElementById('staff_health').value='0';
+  document.getElementById('staff_remark').value='';
+  document.getElementById('staff_status').value='在職';
+  editStaffIndex=-1;
+  document.getElementById('btnUpdateStaff').style.display='none';
+}
+
+// ===================== 派遣記錄相關函數 =====================
+function renderAttend(){
+  const y=document.getElementById('filter_year').value;
+  const m=document.getElementById('filter_month').value;
+  const c=document.getElementById('filter_company').value;
+  const ss=document.getElementById('filter_staff_status').value;
+  const sList=ss!=='all'?staffData.filter(x=>x.status===ss).map(x=>x.name):staffData.map(x=>x.name);
+  
+  let list=attendData.filter(x=>
+    (y==='all'||x.date.startsWith(y)) &&
+    (m==='all'||x.date.slice(5,7)===String(m).padStart(2,'0')) &&
+    (!c||x.company===c) && sList.includes(x.staff)
+  );
+  
+  const {pagedList, total, totalPages}=getPagedData(list,'attend');
+  let html='';
+  
+  pagedList.forEach(item=>{
+    const idx=attendData.findIndex(x=>
+      x.company===item.company && 
+      x.staff===item.staff && 
+      x.date===item.date
+    );
+    const am=item.am_s&&item.am_e?`${item.am_s}-${item.am_e}`:'-';
+    const pm=item.pm_s&&item.pm_e?`${item.pm_s}-${item.pm_e}`:'-';
+    const hour=((+getHours(item.am_s,item.am_e)) + (+getHours(item.pm_s,item.pm_e))).toFixed(1);
+    const point=Math.ceil(+hour);
+    
+    html+=`<tr>
+      <td>${item.company}</td>
+      <td>${item.staff}</td>
+      <td>${item.date}</td>
+      <td>${am}</td>
+      <td>${pm}</td>
+      <td>${hour}</td>
+      <td>${point}</td>
+      <td>
+        <button class="btn-sm btn-warning" onclick="editAttend(${idx})"><i class="fas fa-edit"></i> 修改</button>
+        <button class="btn-sm btn-pdf" onclick="delAttend(${idx})"><i class="fas fa-trash"></i> 刪除</button>
+      </td>
+    </tr>`;
+  });
+  
+  document.getElementById('attendTable').innerHTML=html||'<tr><td colspan=8>無派遣記錄</td></tr>';
+  renderPagination('attend', total, totalPages);
+}
+
+function addAttend(){
+  const o={
+    company: document.getElementById('attend_company').value,
+    staff: document.getElementById('attend_staff').value,
+    date: document.getElementById('attend_date').value,
+    am_s: document.getElementById('am_s').value,
+    am_e: document.getElementById('am_e').value,
+    pm_s: document.getElementById('pm_s').value,
+    pm_e: document.getElementById('pm_e').value
+  };
+  
+  if(!o.company||!o.staff||!o.date){
+    alert('請填寫公司、人員、日期');
+    return;
+  }
+  
+  // 新增：工時驗證
+  if(!o.am_s && !o.am_e && !o.pm_s && !o.pm_e) {
+    alert('請至少填寫一個工時區段');
+    return;
+  }
+  
+  // 檢查是否重複
+  const isDuplicate=attendData.some(x=>
+    x.company===o.company && 
+    x.staff===o.staff && 
+    x.date===o.date
+  );
+  
+  if(isDuplicate){
+    if(!confirm('此日期已有派遣記錄，是否覆蓋？'))return;
+    const idx=attendData.findIndex(x=>
+      x.company===o.company && 
+      x.staff===o.staff && 
+      x.date===o.date
+    );
+    attendData[idx]=o;
+  }else{
+    attendData.push(o);
+  }
+  
+  saveAll();
+  resetPage('attend');
+  renderAttend();
+  clearAttendForm();
+  checkStaffPointAlert(o.staff);
+  alert('儲存成功');
+}
+
+function editAttend(i){
+  const d=attendData[i];
+  document.getElementById('attend_company').value=d.company;
+  document.getElementById('attend_staff').value=d.staff;
+  document.getElementById('attend_date').value=d.date;
+  document.getElementById('am_s').value=d.am_s||'';
+  document.getElementById('am_e').value=d.am_e||'';
+  document.getElementById('pm_s').value=d.pm_s||'';
+  document.getElementById('pm_e').value=d.pm_e||'';
+  
+  // 隱藏儲存按鈕，顯示修改按鈕（這裡直接用同一個儲存按鈕，因為邏輯已處理重複）
+  editAttendIndex=i;
+}
+
+function delAttend(i){
+  if(!confirm('確定刪除此派遣記錄？刪除後點數統計和薪資計算將受影響'))return;
+  attendData.splice(i,1);
+  saveAll();
+  resetPage('attend');
+  renderAttend();
+}
+
+function clearAttendForm(){
+  document.getElementById('attend_company').value='';
+  document.getElementById('attend_staff').value='';
+  document.getElementById('attend_date').value='';
+  document.getElementById('am_s').value='';
+  document.getElementById('am_e').value='';
+  document.getElementById('pm_s').value='';
+  document.getElementById('pm_e').value='';
+  editAttendIndex=-1;
+}
+
+// ===================== 點數統計相關函數 =====================
+function renderPoint(){
+  const cp=document.getElementById('point_filter_company').value;
+  let list=custData.filter(x=>!cp||x.name===cp);
+  const {pagedList, total, totalPages}=getPagedData(list,'point');
+  
+  let html='';
+  pagedList.forEach(cust=>{
+    // 合約總點數
+    const contractPoints=contractData
+      .filter(x=>x.customer===cust.name)
+      .reduce((sum,item)=>sum+(+item.point||0),0);
+    
+    // 已使用點數
+    const usedPoints=attendData
+      .filter(x=>x.company===cust.name)
+      .reduce((sum,item)=>{
+        const hour=(+getHours(item.am_s,item.am_e)) + (+getHours(item.pm_s,item.pm_e));
+        return sum + Math.ceil(hour);
+      },0);
+    
+    // 剩餘點數
+    const remainPoints=contractPoints - usedPoints;
+    const statusClass=remainPoints<0?'red':'green';
+    const statusText=remainPoints<0?'不足':'充足';
+    
+    html+=`<tr>
+      <td>${cust.name}</td>
+      <td>${contractPoints}</td>
+      <td>${usedPoints}</td>
+      <td class="${statusClass}">${remainPoints}</td>
+      <td>${statusText}</td>
+    </tr>`;
+  });
+  
+  document.getElementById('pointTable').innerHTML=html||'<tr><td colspan=5>無統計資料</td></tr>';
+  renderPagination('point', total, totalPages);
+}
+
+// ===================== 對帳單相關函數 =====================
+function renderBill(){
+  const cb=document.getElementById('bill_filter_company').value;
+  const yb=document.getElementById('bill_filter_year').value;
+  const mb=document.getElementById('bill_filter_month').value;
+  
+  if(!cb){
+    alert('請選擇公司');
+    return;
+  }
+  
+  let list=attendData.filter(x=>
+    x.company===cb &&
+    (yb==='all'||x.date.startsWith(yb)) &&
+    (mb==='all'||x.date.slice(5,7)===String(mb).padStart(2,'0'))
+  );
+  
+  const {pagedList, total, totalPages}=getPagedData(list,'bill');
+  
+  // 計算總結
+  const totalHours=list.reduce((sum,item)=>{
+    return sum + (+getHours(item.am_s,item.am_e)) + (+getHours(item.pm_s,item.pm_e));
+  },0);
+  
+  const totalPoints=list.reduce((sum,item)=>{
+    const hour=(+getHours(item.am_s,item.am_e)) + (+getHours(item.pm_s,item.pm_e));
+    return sum + Math.ceil(hour);
+  },0);
+  
+  const contractPoints=contractData
+    .filter(x=>x.customer===cb)
+    .reduce((sum,item)=>sum+(+item.point||0),0);
+  
+  const remainPoints=contractPoints - totalPoints;
+  
+  document.getElementById('billSummary').innerHTML=`
+    客戶：${cb} | 
+    統計期間：${yb==='all'?'全部年份':yb}年${mb==='all'?'全部月份':mb+'月'} | 
+    總工時：${totalHours.toFixed(1)}小時 | 
+    使用點數：${totalPoints}點 | 
+    合約總點數：${contractPoints}點 | 
+    剩餘點數：<span class="${remainPoints<0?'red':'green'}">${remainPoints}</span>點
+  `;
+  
+  // 渲染表格
+  let html='';
+  pagedList.forEach(item=>{
+    const hour=(+getHours(item.am_s,item.am_e)) + (+getHours(item.pm_s,item.pm_e)).toFixed(1);
+    const point=Math.ceil(+hour);
+    
+    html+=`<tr>
+      <td>${item.date}</td>
+      <td>${item.staff}</td>
+      <td>${hour}</td>
+      <td>${point}</td>
+      <td>${contractPoints - point}</td>
+      <td>${contractPoints}</td>
+    </tr>`;
+  });
+  
+  document.getElementById('billTable').innerHTML=html||'<tr><td colspan=6>無對帳資料</td></tr>';
+  renderPagination('bill', total, totalPages);
+}
+
+// ===================== 薪資計算相關函數（修改支援全部人員） =====================
+function renderSalary(){
+  const s=document.getElementById('sal_filter_staff').value;
+  const ys=document.getElementById('sal_filter_year').value;
+  const ms=document.getElementById('sal_filter_month').value;
+  
+  // 修改：移除必須選擇特定人員的限制
+  let list=[];
+  let totalSummary = {
+    totalHour: 0,
+    totalSalary: 0,
+    totalLabor: 0,
+    totalHealth: 0,
+    totalNet: 0
+  };
+  
+  // 取得篩選後的派遣記錄
+  if(s==='all'){
+    // 全部人員
+    list=attendData.filter(x=>
+      (ys==='all'||x.date.startsWith(ys)) &&
+      (ms==='all'||x.date.slice(5,7)===String(ms).padStart(2,'0'))
+    );
+  }else{
+    // 特定人員
+    const staff=staffData.find(x=>x.name===s);
+    if(!staff){
+      alert('找不到此人員資料');
+      return;
+    }
+    list=attendData.filter(x=>
+      x.staff===s &&
+      (ys==='all'||x.date.startsWith(ys)) &&
+      (ms==='all'||x.date.slice(5,7)===String(ms).padStart(2,'0'))
+    );
+  }
+  
+  const {pagedList, total, totalPages}=getPagedData(list,'salary');
+  
+  // 渲染表格
+  let html='';
+  
+  pagedList.forEach(item=>{
+    // 取得該人員的薪資設定
+    const staff=staffData.find(x=>x.name===item.staff);
+    if(!staff) return;
+    
+    const hourly=+staff.hourly||0;
+    const labor=+staff.labor||0;
+    const health=+staff.health||0;
+    
+    const hour=(+getHours(item.am_s,item.am_e)) + (+getHours(item.pm_s,item.pm_e));
+    totalSummary.totalHour+=hour;
+    
+    const salary=(hour * hourly).toFixed(0);
+    totalSummary.totalSalary+=+salary;
+    totalSummary.totalLabor+=labor;
+    totalSummary.totalHealth+=health;
+    
+    const net = (salary - labor - health).toFixed(0);
+    totalSummary.totalNet+=+net;
+    
+    html+=`<tr>
+      <td>${item.staff}</td>
+      <td>${item.date}</td>
+      <td>${item.company}</td>
+      <td>${hour.toFixed(1)}</td>
+      <td>${salary}</td>
+      <td>${labor}</td>
+      <td>${health}</td>
+      <td>${net}</td>
+    </tr>`;
+  });
+  
+  // 更新結果
+  if(s==='all'){
+    document.getElementById('salResult').innerHTML=`
+      人員：全部人員 | 
+      統計期間：${ys==='all'?'全部年份':ys}年${ms==='all'?'全部月份':ms+'月'} | 
+      總工時：${totalSummary.totalHour.toFixed(1)}小時 | 
+      總薪資：${totalSummary.totalSalary.toFixed(0)}元
+    `;
+  }else{
+    const staff=staffData.find(x=>x.name===s);
+    const hourly=+staff.hourly||0;
+    const labor=+staff.labor||0;
+    const health=+staff.health||0;
+    
+    document.getElementById('salResult').innerHTML=`
+      人員：${s} | 
+      統計期間：${ys==='all'?'全部年份':ys}年${ms==='all'?'全部月份':ms+'月'} | 
+      總工時：${totalSummary.totalHour.toFixed(1)}小時 | 
+      總薪資：${totalSummary.totalSalary.toFixed(0)}元
+    `;
+  }
+  
+  document.getElementById('salLabor').textContent=totalSummary.totalLabor.toFixed(0);
+  document.getElementById('salHealth').textContent=totalSummary.totalHealth.toFixed(0);
+  document.getElementById('salNet').textContent=totalSummary.totalNet.toFixed(0);
+  
+  document.getElementById('salaryTable').innerHTML=html||'<tr><td colspan=8>無薪資資料</td></tr>';
+  renderPagination('salary', total, totalPages);
+}
+
+// ===================== 老闆專區相關函數（優化全部客戶查詢） =====================
+function showBoss(){
+  const cy=document.getElementById('boss_year').value;
+  const cm=document.getElementById('boss_month').value;
+  const ccust=document.getElementById('boss_cust_filter').value;
+  
+  let arr = [];
+  let cs = ccust ? custData.filter(x=>x.name===ccust) : custData;
+  
+  cs.forEach(cc => {
+    contractData.filter(co=>co.customer===cc.name).forEach(co => {
+      // 計算派遣次數
+      const dispatchCount=attendData.filter(x=>
+        x.company===cc.name &&
+        (cy==='all'||x.date.startsWith(cy)) &&
+        (cm==='all'||x.date.slice(5,7)===String(cm).padStart(2,'0'))
+      ).length;
+      
+      // 計算剩餘點數
+      const usedPoints=attendData
+        .filter(x=>x.company===cc.name)
+        .reduce((sum,item)=>{
+          const hour=(+getHours(item.am_s,item.am_e)) + (+getHours(item.pm_s,item.pm_e));
+          return sum + Math.ceil(hour);
+        },0);
+      
+      const remainPoints=(+co.point||0) - usedPoints;
+      
+      arr.push({
+        cust:cc,
+        contract:co,
+        dispatchCount,
+        remainPoints
+      });
+    });
+  });
+  
+  const {pagedList, total, totalPages}=getPagedData(arr,'boss');
+  
+  let html='';
+  pagedList.forEach(item=>{
+    html+=`<tr>
+      <td>${item.cust.coop}</td>
+      <td>${item.cust.name}</td>
+      <td>${item.contract.price_plan||'-'}</td>
+      <td>${item.contract.status}</td>
+      <td class="${item.remainPoints<0?'red':'green'}">${item.remainPoints}</td>
+      <td>${item.dispatchCount}</td>
+    </tr>`;
+  });
+  
+  document.getElementById('bossTable').innerHTML=html||'<tr><td colspan=6>無資料</td></tr>';
+  renderPagination('boss', total, totalPages);
+}
+
+// ===================== 儀表板相關函數 =====================
+function renderDashboard(){
+  // 客戶統計
+  const totalCust=custData.length;
+  const activeCust=custData.filter(x=>x.coop==='正合作').length;
+  const inactiveCust=custData.filter(x=>x.coop==='無合作').length;
+  
+  // 點數統計
+  let pointGe50=0;
+  let pointLt50=0;
+  
+  custData.forEach(cust=>{
+    const contractPoints=contractData
+      .filter(x=>x.customer===cust.name)
+      .reduce((sum,item)=>sum+(+item.point||0),0);
+    
+    const usedPoints=attendData
+      .filter(x=>x.company===cust.name)
+      .reduce((sum,item)=>{
+        const hour=(+getHours(item.am_s,item.am_e)) + (+getHours(item.pm_s,item.pm_e));
+        return sum + Math.ceil(hour);
+      },0);
+    
+    const remainPoints=contractPoints - usedPoints;
+    if(remainPoints>=50) pointGe50++;
+    else pointLt50++;
+  });
+  
+  // 人員統計
+  const staffCount=staffData.length;
+  
+  // 更新畫面
+  document.getElementById('dash_total_cust').textContent=totalCust;
+  document.getElementById('dash_active_cust').textContent=activeCust;
+  document.getElementById('dash_inactive_cust').textContent=inactiveCust;
+  document.getElementById('dash_point_ge50').textContent=pointGe50;
+  document.getElementById('dash_point_lt50').textContent=pointLt50;
+  document.getElementById('dash_staff_count').textContent=staffCount;
+}
+
+// ===================== 匯出相關函數 =====================
+function exportExcel(tableId, fileName) {
+  try {
+    const table = document.getElementById(tableId);
+    if(!table) {
+      alert('匯出失敗：找不到匯出表格');
+      return;
+    }
+    
+    const wb = XLSX.utils.table_to_book(table, {sheet: fileName});
+    XLSX.writeFile(wb, `${fileName}_${new Date().toLocaleDateString()}.xlsx`);
+    alert('Excel匯出成功！');
+  } catch (e) {
+    alert('Excel匯出失敗：' + e.message);
+    console.error('Excel匯出錯誤:', e);
+  }
+}
+
+function exportPDF(tableId, fileName) {
+  try {
+    const element = document.getElementById(tableId);
+    if(!element) {
+      alert('匯出失敗：找不到匯出表格');
+      return;
+    }
+    
+    const opt = {
+      margin: 10,
+      filename: `${fileName}_${new Date().toLocaleDateString()}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+    };
+    
+    html2pdf().set(opt).from(element).save();
+    alert('PDF匯出成功！');
+  } catch (e) {
+    alert('PDF匯出失敗：' + e.message);
+    console.error('PDF匯出錯誤:', e);
+  }
+}
+</script>
+</body>
+</html>
