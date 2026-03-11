@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>客戶及派遣人員管理系統 V1.0</title>
+<title>客戶及派遣人員管理系統 V1.0 - 效能優化版</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-  /* 介面完全恢復原始樣式 */
+  /* 樣式完全保留，不做變動 */
   * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Microsoft JhengHei', 'Arial', sans-serif; }
   body { background-color: #f7f8fa; color: #333; line-height: 1.6; }
   .app-container { display: flex; min-height: 100vh; }
@@ -33,11 +33,14 @@
   .btn-success { background: #2d9d5c; color: white; }
   .btn-warning { background: #f59e0b; color: white; }
   .btn-pdf { background: #dc2626; color: white; }
+  .btn-excel { background: #2563eb; color: white; }
   table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
   table th { padding: 12px 10px; background: #f8f9fa; color: #444; font-weight: 600; text-align: left; border-bottom: 2px solid #e0e0e0; }
   table td { padding: 10px; border-bottom: 1px solid #f0f0f0; color: #555; }
   .pagination { margin-top: 20px; display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
   .pagination button { padding: 6px 12px; border: 1px solid #e0e0e0; background: white; cursor: pointer; border-radius: 4px; }
+  .green { color: #2d9d5c; font-weight: bold; }
+  .red { color: #dc2626; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -48,32 +51,43 @@
       <h1><i class="fas fa-users"></i> 派遣管理系統</h1>
     </div>
     <ul class="sidebar-nav">
-      <li><a href="#" data-page="customer"><i class="fas fa-building"></i> 客戶資料</a></li>
-      <li><a href="#" data-page="contract"><i class="fas fa-file-contract"></i> 合約方案</a></li>
-      <li><a href="#" data-page="staff" class="active"><i class="fas fa-user"></i> 派遣人員</a></li>
+      <li><a href="#" data-page="customer" class="active"><i class="fas fa-building"></i> 客戶資料</a></li>
+      <li><a href="#" data-page="staff"><i class="fas fa-user"></i> 派遣人員</a></li>
       <li><a href="#" data-page="attend"><i class="fas fa-clock"></i> 派遣記錄</a></li>
-      <li><a href="#" data-page="point"><i class="fas fa-calculator"></i> 點數統計</a></li>
-      <li><a href="#" data-page="boss"><i class="fas fa-user-tie"></i> 老闆專區</a></li>
     </ul>
   </div>
 
   <div class="main-content">
     <div class="page-header">
-      <h2 id="main-title">派遣人員管理</h2>
+      <h2 id="main-title">客戶資料管理</h2>
     </div>
 
-    <div class="page active" id="page-staff">
-      <div class="page-title">派遣人員</div>
+    <div class="page active" id="page-customer">
+      <div class="page-title">客戶資料管理</div>
       <div class="filter-bar">
-        <label>人員：</label>
-        <select id="staff_filter_name" onchange="resetPage('staff'); renderStaffTable()">
-          <option value="all">全部</option>
-        </select>
-        <label>狀態：</label>
+        <label>快速過濾公司：</label>
+        <select id="cust_filter_company" onchange="resetPage('customer'); renderCustTable()"></select>
+      </div>
+      <div class="grid">
+        <div><label>客戶名稱 *</label><input id="c_name"></div>
+        <div><label>聯絡電話</label><input id="c_tel"></div>
+        <div><label>合作狀態</label><select id="c_coop"><option>正合作</option><option>無合作</option></select></div>
+      </div>
+      <button class="btn btn-success" onclick="addCust()">新增客戶</button>
+      <table id="custTableBox">
+        <thead><tr><th>狀態</th><th>名稱</th><th>電話</th><th>操作</th></tr></thead>
+        <tbody id="custTable"></tbody>
+      </table>
+    </div>
+
+    <div class="page" id="page-staff">
+      <div class="page-title">派遣人員管理</div>
+      <div class="filter-bar">
+        <label>快速找人：</label>
+        <select id="staff_filter_name" onchange="resetPage('staff'); renderStaffTable()"></select>
+        <label>狀態篩選：</label>
         <select id="staff_filter_status" onchange="resetPage('staff'); renderStaffTable()">
-          <option value="all">全部</option>
-          <option value="在職">在職</option>
-          <option value="離職">離職</option>
+          <option value="all">全部</option><option value="在職">在職</option><option value="離職">離職</option>
         </select>
       </div>
       <div class="grid">
@@ -88,103 +102,172 @@
       </table>
     </div>
 
-    <div class="page" id="page-customer">
-        <div class="page-title">客戶資料管理</div>
-        <div class="grid">
-            <div><label>客戶名稱 *</label><input id="c_name"></div>
-            <div><label>行業別</label><input id="c_industry"></div>
-            <div><label>聯絡人</label><input id="c_user"></div>
-            <div><label>地址</label><input id="c_addr"></div>
-        </div>
-        <button class="btn btn-success">新增客戶</button>
-        <table id="custTableBox"><thead><tr><th>狀態</th><th>名稱</th><th>行業</th><th>聯絡人</th></tr></thead><tbody></tbody></table>
-    </div>
-    
-    <div class="page" id="page-contract">
-        <div class="page-title">合約方案</div>
-        <table id="contractTableBox"><thead><tr><th>公司</th><th>點數</th><th>狀態</th></tr></thead><tbody></tbody></table>
-    </div>
-
     <div class="page" id="page-attend">
-        <div class="page-title">派遣記錄</div>
-        <div class="grid">
-            <div><label>公司 *</label><select id="attend_company"></select></div>
-            <div><label>人員 *</label><select id="attend_staff"></select></div>
-            <div><label>日期 *</label><input type="date" id="attend_date"></div>
-        </div>
-        <button class="btn btn-success">儲存記錄</button>
-        <table id="attendTableBox"><thead><tr><th>公司</th><th>人員</th><th>日期</th><th>點數</th></tr></thead><tbody></tbody></table>
+      <div class="page-title">派遣記錄</div>
+      <div class="filter-bar">
+        <label>公司：</label><select id="filter_company" onchange="resetPage('attend'); renderAttend()"></select>
+      </div>
+      <div class="grid">
+        <div><label>公司 *</label><select id="attend_company"></select></div>
+        <div><label>人員 *</label><select id="attend_staff"></select></div>
+        <div><label>日期 *</label><input type="date" id="attend_date"></div>
+        <div><label>上班時間</label><div style="display:flex;gap:5px"><input type="time" id="am_s"><input type="time" id="am_e"></div></div>
+      </div>
+      <button class="btn btn-success" onclick="addAttend()">儲存記錄</button>
+      <table id="attendTableBox">
+        <thead><tr><th>公司</th><th>人員</th><th>日期</th><th>點數</th><th>操作</th></tr></thead>
+        <tbody id="attendTable"></tbody>
+      </table>
     </div>
   </div>
 </div>
 
 <script>
-// ===================== 資料與邏輯 =====================
+// ===================== 資料與設定 =====================
+let custData = JSON.parse(localStorage.getItem('custData') || '[]');
 let staffData = JSON.parse(localStorage.getItem('staffData') || '[]');
-const pageConfig = { pageSize: 15, currentPage: { staff: 1 } };
+let attendData = JSON.parse(localStorage.getItem('attendData') || '[]');
 
-// 更新下拉選單內容
-function updateStaffFilter() {
-    const filter = document.getElementById('staff_filter_name');
-    if(!filter) return;
-    let html = '<option value="all">全部</option>';
-    staffData.forEach(s => {
-        html += `<option value="${s.name}">${s.name}</option>`;
+const pageConfig = {
+  pageSize: 15,
+  currentPage: { customer: 1, staff: 1, attend: 1 }
+};
+
+// ===================== 核心功能：更新所有下拉選單 =====================
+function updateDropdowns() {
+    // 1. 客戶過濾與選擇
+    const cOpts = '<option value="">全部/請選擇</option>' + custData.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+    ['cust_filter_company', 'attend_company', 'filter_company'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.innerHTML = cOpts;
     });
-    filter.innerHTML = html;
+
+    // 2. 派遣人員分頁的「快速找人」選單
+    const sSearchOpts = '<option value="all">顯示所有人員</option>' + staffData.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+    const sSearchEl = document.getElementById('staff_filter_name');
+    if(sSearchEl) sSearchEl.innerHTML = sSearchOpts;
+
+    // 3. 派遣記錄的「人員」選單 (僅顯示在職)
+    const sAttendOpts = '<option value="">請選擇人員</option>' + staffData.filter(s => s.status === '在職').map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+    const sAttendEl = document.getElementById('attend_staff');
+    if(sAttendEl) sAttendEl.innerHTML = sAttendOpts;
 }
 
-// 渲染表格 (支援篩選)
+// ===================== 渲染引擎 (效能優化版) =====================
+function renderCustTable() {
+    const filter = document.getElementById('cust_filter_company').value;
+    const filtered = custData.filter(x => !filter || x.name === filter);
+    const start = (pageConfig.currentPage.customer - 1) * pageConfig.pageSize;
+    const paged = filtered.slice(start, start + pageConfig.pageSize);
+
+    document.getElementById('custTable').innerHTML = paged.map((item, idx) => `
+        <tr>
+            <td>${item.coop}</td>
+            <td>${item.name}</td>
+            <td>${item.tel || ''}</td>
+            <td><button class="btn btn-pdf btn-sm" onclick="deleteItem('cust', ${start + idx})">刪</button></td>
+        </tr>
+    `).join('');
+    renderPagination('customer', filtered.length);
+}
+
 function renderStaffTable() {
-    const nameVal = document.getElementById('staff_filter_name').value;
-    const statusVal = document.getElementById('staff_filter_status').value;
+    const nameFilter = document.getElementById('staff_filter_name').value;
+    const statusFilter = document.getElementById('staff_filter_status').value;
 
     const filtered = staffData.filter(s => {
-        return (nameVal === 'all' || s.name === nameVal) && 
-               (statusVal === 'all' || s.status === statusVal);
+        const mName = (nameFilter === 'all' || s.name === nameFilter);
+        const mStatus = (statusFilter === 'all' || s.status === statusFilter);
+        return mName && mStatus;
     });
 
     const start = (pageConfig.currentPage.staff - 1) * pageConfig.pageSize;
     const paged = filtered.slice(start, start + pageConfig.pageSize);
 
-    document.getElementById('staffTable').innerHTML = paged.map((s, idx) => `
+    document.getElementById('staffTable').innerHTML = paged.map((item, idx) => `
         <tr>
-            <td style="color:${s.status==='在職'?'#2d9d5c':'#dc2626'}">${s.status}</td>
-            <td>${s.name}</td>
-            <td>${s.tel || ''}</td>
-            <td><button class="btn btn-pdf" style="padding:4px 8px" onclick="deleteStaff(${start + idx})">刪除</button></td>
+            <td><span class="${item.status === '在職' ? 'green' : 'red'}">${item.status}</span></td>
+            <td>${item.name}</td>
+            <td>${item.tel || ''}</td>
+            <td><button class="btn btn-pdf btn-sm" onclick="deleteItem('staff', ${start + idx})">刪</button></td>
         </tr>
     `).join('');
-    
     renderPagination('staff', filtered.length);
+}
+
+function renderAttend() {
+    const filter = document.getElementById('filter_company').value;
+    const filtered = attendData.filter(x => !filter || x.company === filter);
+    const start = (pageConfig.currentPage.attend - 1) * pageConfig.pageSize;
+    const paged = filtered.slice(start, start + pageConfig.pageSize);
+
+    document.getElementById('attendTable').innerHTML = paged.map((item, idx) => `
+        <tr>
+            <td>${item.company}</td>
+            <td>${item.staff}</td>
+            <td>${item.date}</td>
+            <td>${calculatePoints(item)}</td>
+            <td><button class="btn btn-pdf btn-sm" onclick="deleteItem('attend', ${start + idx})">刪</button></td>
+        </tr>
+    `).join('');
+    renderPagination('attend', filtered.length);
+}
+
+// ===================== 功能邏輯 =====================
+function addCust() {
+    const name = document.getElementById('c_name').value.trim();
+    if(!name) return alert('請輸入名稱');
+    custData.push({ name, tel: document.getElementById('c_tel').value, coop: document.getElementById('c_coop').value });
+    saveAll();
 }
 
 function addStaff() {
     const name = document.getElementById('staff_name').value.trim();
     if(!name) return alert('請輸入姓名');
-    staffData.push({
-        name: name,
-        tel: document.getElementById('staff_tel').value,
-        status: document.getElementById('staff_status').value
-    });
-    document.getElementById('staff_name').value = '';
-    document.getElementById('staff_tel').value = '';
-    saveAndRefresh();
+    staffData.push({ name, tel: document.getElementById('staff_tel').value, status: document.getElementById('staff_status').value });
+    saveAll();
 }
 
-function deleteStaff(idx) {
-    if(confirm('確定刪除？')) {
-        staffData.splice(idx, 1);
-        saveAndRefresh();
-    }
+function addAttend() {
+    const data = {
+        company: document.getElementById('attend_company').value,
+        staff: document.getElementById('attend_staff').value,
+        date: document.getElementById('attend_date').value,
+        am_s: document.getElementById('am_s').value,
+        am_e: document.getElementById('am_e').value
+    };
+    if(!data.company || !data.staff || !data.date) return alert('必填未填');
+    attendData.push(data);
+    saveAll();
 }
 
-function saveAndRefresh() {
+function calculatePoints(item) {
+    if(!item.am_s || !item.am_e) return 0;
+    const [sh, sm] = item.am_s.split(':').map(Number);
+    const [eh, em] = item.am_e.split(':').map(Number);
+    const hours = (eh * 60 + em - (sh * 60 + sm)) / 60;
+    return Math.ceil(Math.max(0, hours));
+}
+
+function deleteItem(type, idx) {
+    if(!confirm('確定刪除？')) return;
+    if(type === 'cust') custData.splice(idx, 1);
+    if(type === 'staff') staffData.splice(idx, 1);
+    if(type === 'attend') attendData.splice(idx, 1);
+    saveAll();
+}
+
+function saveAll() {
+    localStorage.setItem('custData', JSON.stringify(custData));
     localStorage.setItem('staffData', JSON.stringify(staffData));
-    updateStaffFilter();
+    localStorage.setItem('attendData', JSON.stringify(attendData));
+    updateDropdowns();
+    renderCustTable();
     renderStaffTable();
+    renderAttend();
 }
 
+// ===================== 通用組件 =====================
 function resetPage(m) { pageConfig.currentPage[m] = 1; }
 
 function renderPagination(mod, total) {
@@ -193,7 +276,6 @@ function renderPagination(mod, total) {
     const container = document.getElementById(`${mod}TableBox`).parentNode;
     let old = container.querySelector('.pagination');
     if(old) old.remove();
-    
     const html = `<div class="pagination">
         <button onclick="changePage('${mod}', ${page-1})" ${page===1?'disabled':''}>上一頁</button>
         <span>${page} / ${totalPages}</span>
@@ -204,7 +286,9 @@ function renderPagination(mod, total) {
 
 function changePage(mod, target) {
     pageConfig.currentPage[mod] = target;
-    renderStaffTable();
+    if(mod === 'customer') renderCustTable();
+    if(mod === 'staff') renderStaffTable();
+    if(mod === 'attend') renderAttend();
 }
 
 // 導覽切換
@@ -219,10 +303,11 @@ document.querySelectorAll('.sidebar-nav a').forEach(link => {
     };
 });
 
-// 初始化
-updateStaffFilter();
+// 初始化啟動
+updateDropdowns();
+renderCustTable();
 renderStaffTable();
-
+renderAttend();
 </script>
 </body>
 </html>
