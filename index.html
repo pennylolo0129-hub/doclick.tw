@@ -575,6 +575,17 @@
             </tbody>
           </table>
         </div>
+
+        <div class="panel">
+          <h3 class="panel-title"><i class="fas fa-cog" style="color:#607d8b;"></i> 系統設定 (對帳單 Logo)</h3>
+          <div style="display:flex; align-items:center; gap:15px; margin-top: 15px;">
+            <img id="logoPreview" src="" style="height:50px; border-radius:8px; display:none; border:1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+            <button class="btn btn-warning" onclick="document.getElementById('logoUpload').click()"><i class="fas fa-upload"></i> 上傳專屬 Logo</button>
+            <input type="file" id="logoUpload" accept="image/*" style="display:none" onchange="handleLogoUpload(this)">
+            <button class="btn btn-pdf" onclick="clearLogo()" id="btnClearLogo" style="display:none;"><i class="fas fa-trash"></i> 移除</button>
+          </div>
+          <p style="font-size:13px; color:#888; margin-top:15px; line-height: 1.5;">💡 <b>提示：</b>在這裡上傳一次圖片後，系統會自動記憶。未來點擊「一鍵生成對帳單」就會完美印出 Logo，徹底解決破圖問題！</p>
+        </div>
       </div>
     </div>
 
@@ -829,6 +840,9 @@ let custData = JSON.parse(localStorage.getItem('custData') || '[]');
 let contractData = JSON.parse(localStorage.getItem('contractData') || '[]');
 let staffData = JSON.parse(localStorage.getItem('staffData') || '[]');
 let attendData = JSON.parse(localStorage.getItem('attendData') || '[]');
+// 新增：儲存 Logo 的全域變數
+let companyLogoBase64 = localStorage.getItem('companyLogo') || '';
+
 let editCustIndex = -1;
 let editContractIndex = -1;
 let editStaffIndex = -1;
@@ -1042,6 +1056,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 });
+
 function updateCurrentTime() {
   const now = new Date();
   const timeStr = now.toLocaleString('zh-TW', {
@@ -1080,7 +1095,7 @@ function showPage(page, link) {
     attend: '派遣記錄',
     point: '點數統計',
     bill: '對帳單',
-    salary: '薪薪計算',
+    salary: '薪資計算',
     boss: '老闆專區',
     dashboard: '總覽儀表板'
   };
@@ -1101,6 +1116,7 @@ function renderAll() {
   renderAttend();
   renderPoint();
   renderDashboard();
+  updateLogoPreview(); // 初始化時更新 Logo 預覽
 }
 
 function fillFilters() {
@@ -1974,7 +1990,6 @@ function renderDashboard(){
   let pointGe50 = 0;
   let pointLt50 = 0;
   let alertHtml = '';
-  // 儲存點數警示清單 HTML
   
   custData.forEach(cust=>{
     const contractPoints=contractData
@@ -1994,8 +2009,7 @@ function renderDashboard(){
       pointGe50++;
     } else {
       pointLt50++;
-      // 動態生成：點數警示名單 (低於50點)
-      if (cust.coop !== '無合作') { // 建議只列出正在合作或相關的客戶
+      if (cust.coop !== '無合作') {
         alertHtml += `<tr>
           <td>${cust.name}</td>
           <td class="red">${remainPoints} 點</td>
@@ -2021,7 +2035,6 @@ function renderDashboard(){
   }
 
   // --- 2. 渲染今日派遣動態 ---
-  // 抓取今天的本地日期字串 YYYY-MM-DD
   const todayDate = new Date();
   const todayStr = todayDate.getFullYear() + '-' + String(todayDate.getMonth() + 1).padStart(2, '0') + '-' + String(todayDate.getDate()).padStart(2, '0');
   const todayAttends = attendData.filter(x => x.date === todayStr);
@@ -2029,7 +2042,7 @@ function renderDashboard(){
   todayAttends.forEach(item => {
     const am = item.am_s && item.am_e ? `${item.am_s}-${item.am_e}` : '';
     const pm = item.pm_s && item.pm_e ? `${item.pm_s}-${item.pm_e}` : '';
-    const timeStr = [am, pm].filter(x => x).join(' / '); // 組合上午與下午時間
+    const timeStr = [am, pm].filter(x => x).join(' / ');
     
     todayHtml += `<tr>
       <td>${item.staff}</td>
@@ -2046,7 +2059,6 @@ function renderDashboard(){
   const currentMonth = todayDate.getMonth() + 1;
   let bdayHtml = '';
 
-  // 篩選出「在職」且「生日月份等於本月」的人員，並依照日期排序
   const birthdayStaff = staffData.filter(x => {
     if (x.status !== '在職' || !x.birthday) return false;
     const month = parseInt(x.birthday.split('-')[1], 10);
@@ -2058,7 +2070,6 @@ function renderDashboard(){
   });
 
   birthdayStaff.forEach(item => {
-    // 擷取月和日顯示 (例如：03-15)
     const shortDate = item.birthday.substring(5);
     bdayHtml += `<tr>
       <td style="font-weight:bold; color:#333;">${item.name}</td>
@@ -2070,6 +2081,41 @@ function renderDashboard(){
   const bdayTableObj = document.getElementById('dash_birthday_table');
   if (bdayTableObj) {
      bdayTableObj.innerHTML = bdayHtml || '<tr><td colspan="3" style="text-align:center; color:#999; padding: 15px;">本月目前無壽星 🎂</td></tr>';
+  }
+}
+
+// ===================== Logo 上傳相關函數 =====================
+function handleLogoUpload(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      companyLogoBase64 = e.target.result;
+      localStorage.setItem('companyLogo', companyLogoBase64); // 永遠記住 Logo
+      updateLogoPreview();
+      alert('Logo 上傳成功！未來匯出對帳單將會自動帶入此 Logo。');
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+function clearLogo() {
+  if(!confirm('確定要移除目前設定的 Logo 嗎？')) return;
+  companyLogoBase64 = '';
+  localStorage.removeItem('companyLogo');
+  updateLogoPreview();
+}
+
+function updateLogoPreview() {
+  const preview = document.getElementById('logoPreview');
+  const btnClear = document.getElementById('btnClearLogo');
+  if (companyLogoBase64) {
+    preview.src = companyLogoBase64;
+    preview.style.display = 'block';
+    btnClear.style.display = 'inline-block';
+  } else {
+    preview.src = '';
+    preview.style.display = 'none';
+    btnClear.style.display = 'none';
   }
 }
 
@@ -2090,8 +2136,7 @@ function exportExcel(tableId, fileName) {
 function exportPDF(tableId, fileName) {
   try {
     const element = document.getElementById(tableId);
-    if(!element) { alert('匯出失敗：找不到匯出表格'); return;
-    }
+    if(!element) { alert('匯出失敗：找不到匯出表格'); return; }
     const opt = {
       margin: 10,
       filename: `${fileName}_${new Date().toLocaleDateString()}.pdf`,
@@ -2170,10 +2215,16 @@ function generateStatementPDF() {
 
   const periodText = (yb==='all' && mb==='all') ? '全部歷史期間' : `${yb!=='all'?yb+'年':''}${mb!=='all'?mb+'月':''}`;
 
-  // 注入排版內容 (包含頂部資訊、統計數據、明細與底部簽章區塊)
+  // 處理系統 Logo
+  const logoHtml = companyLogoBase64 
+      ? `<img src="${companyLogoBase64}" style="height: 60px; border-radius: 12px; margin-right: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">` 
+      : ``;
+
+  // 注入排版內容 (包含動態 Logo、頂部資訊、統計數據、明細與底部簽章區塊)
   printArea.innerHTML = `
-    <div style="text-align:center; margin-bottom:30px; border-bottom: 2px solid #2d9d5c; padding-bottom: 15px;">
-        <h2 style="font-size:26px; margin:0; color:#2d9d5c; letter-spacing: 2px;">愜易居 - 客戶服務對帳單</h2>
+    <div style="display: flex; align-items: center; justify-content: center; margin-bottom:30px; border-bottom: 2px solid #2d9d5c; padding-bottom: 15px;">
+        ${logoHtml}
+        <h2 style="font-size:28px; margin:0; color:#2d9d5c; letter-spacing: 2px;">愜易居 - 客戶服務對帳單</h2>
     </div>
     
     <div style="display: flex; justify-content: space-between; margin-bottom: 25px; font-size:15px; line-height:1.8;">
