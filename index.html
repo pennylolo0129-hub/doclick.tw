@@ -699,7 +699,7 @@
         <div><label>地址</label><input id="staff_addr"></div>
         <div><label>身份證</label><input id="staff_id"></div>
         <div><label>生日</label><input type="date" id="staff_birthday"></div>
-        <div><label>時薪</label><input id="staff_hourly" type="number" value="0" min="0" step="10"></div>
+        <div><label>時薪 (填0為自動)</label><input id="staff_hourly" type="number" value="0" min="0" step="10" placeholder="0為自動計算"></div>
         <div><label>勞保</label><input id="staff_labor" type="number" value="0" min="0"></div>
         <div><label>健保</label><input id="staff_health" type="number" value="0" min="0"></div>
         <div><label>備註</label><input id="staff_remark"></div>
@@ -722,6 +722,7 @@
             <th>健保</th>
             <th>備註</th>
             <th>狀態</th>
+            <th>累積時數</th>
             <th>累積點數</th>
             <th>操作</th>
           </tr>
@@ -1264,6 +1265,23 @@ function getHours(s,e){
   }
 }
 
+// ==== 計算派遣人員歷史總工時 (新功能) ====
+function getStaffTotalHours(name) {
+  return attendData.filter(x=>x.staff===name).reduce((sum,item)=>{
+    return sum + (+getHours(item.am_s,item.am_e) + +getHours(item.pm_s,item.pm_e));
+  },0);
+}
+
+// ==== 計算自動加薪級距 (新功能) ====
+function getStaffTieredHourly(name) {
+  const h = getStaffTotalHours(name);
+  if (h <= 175) return 210;
+  if (h <= 350) return 220;
+  if (h <= 525) return 230;
+  if (h <= 700) return 240;
+  return 250;
+}
+
 function getStaffTotalPoint(name) {
   return attendData.filter(x=>x.staff===name).reduce((sum,item)=>{
     return sum + Math.ceil(+getHours(item.am_s,item.am_e) + +getHours(item.pm_s,item.pm_e));
@@ -1559,18 +1577,27 @@ function renderStaffTable(){
   pagedList.forEach(item=>{
     const idx=staffData.findIndex(x=>x.name===item.name);
     const tp=getStaffTotalPoint(item.name);
+    const th=getStaffTotalHours(item.name); // 取得實際累積總工時
     const cls=getPointAlertClass(tp);
+    
+    // 動態判斷時薪顯示方式
+    let displayHourly = +item.hourly || 0;
+    if (displayHourly === 0) {
+        displayHourly = `<span style="color:#2d9d5c; font-weight:bold;">${getStaffTieredHourly(item.name)}</span>`;
+    }
+
     html+=`<tr>
       <td>${item.name}</td>
       <td>${item.tel||'-'}</td>
       <td>${item.addr||'-'}</td>
       <td>${item.id||'-'}</td>
       <td>${item.birthday||'-'}</td>
-      <td>${item.hourly||0}</td>
+      <td>${displayHourly}</td>
       <td>${item.labor||0}</td>
       <td>${item.health||0}</td>
       <td>${item.remark||'-'}</td>
       <td>${item.status}</td>
+      <td>${th.toFixed(1)} h</td>
       <td class="${cls}">${tp}</td>
       <td>
         <button class="btn-sm btn-warning" onclick="editStaff(${idx})"><i class="fas fa-edit"></i> 修改</button>
@@ -1578,7 +1605,7 @@ function renderStaffTable(){
       </td>
     </tr>`;
   });
-  document.getElementById('staffTable').innerHTML=html||'<tr><td colspan=12>無資料</td></tr>';
+  document.getElementById('staffTable').innerHTML=html||'<tr><td colspan="13">無資料</td></tr>';
   renderPagination('staff',total,totalPages); fillFilters(); 
   if(document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
 }
@@ -1888,7 +1915,10 @@ function renderSalary(){
     const staff=staffData.find(x=>x.name===item.staff);
     if(!staff) return;
     
-    const hourly=+staff.hourly||0;
+    // 動態取得時薪 (如果是 0，就採用自動等級計算)
+    let hourly = +staff.hourly || 0;
+    if (hourly === 0) hourly = getStaffTieredHourly(staff.name);
+    
     const labor=+staff.labor||0;
     const health=+staff.health||0;
     const hour=(+getHours(item.am_s,item.am_e)) + (+getHours(item.pm_s,item.pm_e));
@@ -1906,7 +1936,7 @@ function renderSalary(){
       <td>${item.date}</td>
       <td>${item.company}</td>
       <td>${hour.toFixed(1)}</td>
-      <td>${salary}</td>
+      <td>${salary} <span style="font-size:12px;color:#888;">(${hourly}/h)</span></td>
       <td>${labor}</td>
       <td>${health}</td>
       <td>${net}</td>
