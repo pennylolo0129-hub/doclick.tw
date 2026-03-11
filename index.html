@@ -368,7 +368,7 @@
     color: #666;
   }
 
-  /* 儀表板進階版樣式 */
+  /* 新增：儀表板進階版樣式 */
   .quick-actions {
     display: flex;
     gap: 10px;
@@ -554,7 +554,7 @@
           <table class="panel-table">
             <thead><tr><th>客戶名稱</th><th>剩餘點數</th><th>快速操作</th></tr></thead>
             <tbody id="dash_alert_table">
-            </tbody>
+              </tbody>
           </table>
         </div>
         
@@ -563,7 +563,7 @@
           <table class="panel-table">
             <thead><tr><th>派遣人員</th><th>客戶公司</th><th>時段</th></tr></thead>
             <tbody id="dash_today_table">
-            </tbody>
+              </tbody>
           </table>
         </div>
       </div>
@@ -761,8 +761,6 @@
         <label>公司</label><select id="bill_filter_company" onchange="resetPage('bill'); renderBill()"></select>
         <label>年</label><select id="bill_filter_year" onchange="resetPage('bill'); renderBill()"></select>
         <label>月</label><select id="bill_filter_month" onchange="resetPage('bill'); renderBill()"></select>
-        
-        <button class="btn btn-backup" onclick="generateClientStatementPDF()"><i class="fas fa-file-invoice-dollar"></i> 一鍵生成客戶對帳單PDF</button>
       </div>
       <div id="billSummary" style="margin-bottom:20px; font-size:16px; font-weight:bold;"></div>
       <button class="btn btn-excel" onclick="exportExcel('billTableBox','對帳單')"><i class="fas fa-file-excel"></i> 匯出 Excel</button>
@@ -812,9 +810,6 @@
     </div>
   </div>
 </div>
-
-<div id="statementTemplate" style="display:none; padding: 40px; font-family: 'Microsoft JhengHei', sans-serif; color: #333; background: #fff; width: 800px; margin: 0 auto;">
-  </div>
 
 <script>
 // ===================== 全域變數 =====================
@@ -867,7 +862,6 @@ const memberPrices = {
     "時數方案5": 310, "時數方案6": 310, "時數方案7": 310, "時數方案8": 310
   }
 };
-
 // ===================== 分頁核心 =====================
 function resetPage(module) {
   pageConfig.currentPage[module] = 1;
@@ -968,6 +962,7 @@ function changePage(module, targetPage) {
       const ccust = document.getElementById('boss_cust_filter').value;
       let arr = [];
       let cs = ccust ? custData.filter(x=>x.name===ccust) : custData;
+      
       cs.forEach(cc => {
         contractData.filter(co=>co.customer===cc.name).forEach(co => {
           const dispatchHours = attendData.filter(x=>
@@ -1067,6 +1062,7 @@ function showPage(page, link) {
   // 切換導航激活狀態
   document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
   if (link) link.classList.add('active');
+  
   // 更新頁面標題
   const titleMap = {
     customer: '客戶資料管理',
@@ -1115,6 +1111,7 @@ function fillFilters() {
   });
   document.getElementById('boss_cust_filter').innerHTML = '<option value="" selected>全部客戶</option>';
   custData.forEach(c => document.getElementById('boss_cust_filter').innerHTML += `<option value="${c.name}">${c.name}</option>`);
+  
   document.querySelectorAll('#sal_filter_staff,#attend_staff').forEach(el => {
     el.innerHTML = '<option value="all" selected>全部人員</option><optgroup label="在職">';
     staffData.filter(s=>s.status==='在職').forEach(s => el.innerHTML += `<option value="${s.name}">${s.name}</option>`);
@@ -1831,140 +1828,6 @@ function renderBill(){
   });
   document.getElementById('billTable').innerHTML=html||'<tr><td colspan=6>無對帳資料</td></tr>';
   renderPagination('bill', total, totalPages);
-}
-
-// ===================== 一鍵生成客戶專屬對帳單 PDF =====================
-function generateClientStatementPDF() {
-  const company = document.getElementById('bill_filter_company').value;
-  if (!company) {
-    alert('請先在左側下拉選單選擇一家「公司」，才能生成專屬對帳單。');
-    return;
-  }
-
-  // 1. 取得合約資料 (取最新的一筆作為代表)
-  const contracts = contractData.filter(x => x.customer === company);
-  // 以簽約日期排序，取最後一筆 (最新) 的合約，如果沒有則顯示無
-  let activeContract = contracts.reverse()[0];
-  
-  let planName = activeContract ? (activeContract.price_plan || '無') : '查無合約記錄';
-  let signDate = activeContract ? (activeContract.date || '無') : '查無記錄';
-  // 這裡計算該客戶 "所有" 合約加總的總點數，以防有多次儲值
-  let totalPoints = contracts.reduce((sum, item) => sum + (+item.point || 0), 0);
-
-  // 2. 取得派遣記錄 (依據畫面上選擇的年月過濾)
-  const yb = document.getElementById('bill_filter_year').value;
-  const mb = document.getElementById('bill_filter_month').value;
-  let attends = attendData.filter(x => 
-    x.company === company &&
-    (yb === 'all' || x.date.startsWith(yb)) &&
-    (mb === 'all' || x.date.slice(5,7) === String(mb).padStart(2,'0'))
-  );
-
-  // 依日期先後排序
-  attends.sort((a,b) => new Date(a.date) - new Date(b.date));
-
-  // 3. 統計與組裝派遣明細 HTML
-  let periodUsedPoints = 0; // 本期使用
-  let attendHtml = '';
-  
-  attends.forEach(item => {
-    const hour = (+getHours(item.am_s, item.am_e)) + (+getHours(item.pm_s, item.pm_e));
-    const point = Math.ceil(hour);
-    periodUsedPoints += point;
-    attendHtml += `
-      <tr>
-        <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.date}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.staff}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee;">${hour.toFixed(1)}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee;">${point}</td>
-      </tr>
-    `;
-  });
-
-  // 計算客戶歷史「所有」已用點數，來推算真實剩餘點數
-  const totalUsedPoints = attendData
-    .filter(x => x.company === company)
-    .reduce((sum,item) => {
-      const hour = (+getHours(item.am_s, item.am_e)) + (+getHours(item.pm_s, item.pm_e));
-      return sum + Math.ceil(hour);
-    }, 0);
-    
-  let remainPoints = totalPoints - totalUsedPoints;
-  let remainColor = remainPoints < 50 ? '#dc2626' : '#2d9d5c'; // 小於 50 點亮紅燈
-
-  // 4. 將資料填入隱藏的 HTML 模板
-  const template = document.getElementById('statementTemplate');
-  template.style.display = 'block'; // 暫時顯示以供 html2pdf 擷取
-  
-  const periodText = (yb==='all' && mb==='all') ? '歷史所有區間' : `${yb==='all'?'全部年份':yb}年 ${mb==='all'?'全部月份':mb+'月'}`;
-
-  template.innerHTML = `
-    <div style="text-align: center; margin-bottom: 30px;">
-      <h2 style="font-size: 28px; margin-bottom: 5px; color: #333;">愜易居派遣 - 客戶專屬對帳單</h2>
-      <p style="color: #666; font-size: 14px;">產出日期：${new Date().toLocaleDateString('zh-TW')}</p>
-    </div>
-    
-    <div style="margin-bottom: 30px; background: #f9f9f9; padding: 20px; border-radius: 8px; border-left: 5px solid #2d9d5c;">
-      <h3 style="font-size: 18px; margin-bottom: 15px; color: #333;">📄 客戶合約資訊</h3>
-      <table style="width: 100%; font-size: 15px;">
-        <tr>
-          <td style="padding: 5px 0; width: 50%;"><strong>客戶名稱：</strong> ${company}</td>
-          <td style="padding: 5px 0; width: 50%;"><strong>購買方案：</strong> ${planName}</td>
-        </tr>
-        <tr>
-          <td style="padding: 5px 0;"><strong>購買日期：</strong> ${signDate}</td>
-          <td style="padding: 5px 0;"><strong>購買點數：</strong> ${totalPoints} 點 (累計)</td>
-        </tr>
-      </table>
-    </div>
-
-    <div style="margin-bottom: 30px;">
-      <h3 style="font-size: 18px; margin-bottom: 10px; color: #333; border-bottom: 2px solid #2d9d5c; padding-bottom: 8px;">📋 派遣明細 <span style="font-size:14px; color:#666; font-weight:normal;">(統計區間：${periodText})</span></h3>
-      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
-        <thead>
-          <tr style="background-color: #f0f8f4; color: #333;">
-            <th style="padding: 12px 10px; border-bottom: 2px solid #2d9d5c;">派遣日期</th>
-            <th style="padding: 12px 10px; border-bottom: 2px solid #2d9d5c;">派遣人員</th>
-            <th style="padding: 12px 10px; border-bottom: 2px solid #2d9d5c;">工時 (小時)</th>
-            <th style="padding: 12px 10px; border-bottom: 2px solid #2d9d5c;">扣除點數</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${attendHtml || '<tr><td colspan="4" style="text-align:center; padding: 20px; color: #999;">本區間無派遣記錄</td></tr>'}
-        </tbody>
-      </table>
-    </div>
-
-    <div style="background: #eef8f2; padding: 20px; border-radius: 8px; text-align: right; border: 1px solid #d1eada;">
-      <p style="font-size: 16px; margin-bottom: 8px; color: #555;"><strong>本期明細使用點數：</strong> ${periodUsedPoints} 點</p>
-      <p style="font-size: 16px; margin-bottom: 8px; color: #555;"><strong>合約累計已用點數：</strong> ${totalUsedPoints} 點</p>
-      <div style="border-top: 1px dashed #ccc; margin: 10px 0;"></div>
-      <p style="font-size: 20px; color: ${remainColor}; margin-top: 10px;">
-        <strong>當前剩餘點數： ${remainPoints} 點</strong>
-      </p>
-    </div>
-    
-    <div style="margin-top: 50px; text-align: center; color: #888; font-size: 13px; line-height: 1.5;">
-      <p>感謝您的支持與配合。此對帳單為系統自動生成。</p>
-      <p>如對時數或點數有任何問題，請盡速與我們聯繫核對。</p>
-    </div>
-  `;
-
-  // 5. 呼叫 html2pdf 匯出為 A4 PDF
-  const opt = {
-    margin: 15, // 邊距
-    filename: `愜易居對帳單_${company}_${yb}年${mb}月.pdf`,
-    image: { type: 'jpeg', quality: 1 },
-    html2canvas: { scale: 2, useCORS: true },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  };
-
-  html2pdf().set(opt).from(template).save().then(() => {
-    template.style.display = 'none'; // 匯出完成後把區塊隱藏回去
-  }).catch(err => {
-    template.style.display = 'none';
-    alert('PDF 產生失敗：' + err.message);
-  });
 }
 
 // ===================== 薪資計算相關函數 =====================
