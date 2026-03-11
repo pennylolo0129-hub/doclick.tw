@@ -566,6 +566,15 @@
             </tbody>
           </table>
         </div>
+
+        <div class="panel">
+          <h3 class="panel-title"><i class="fas fa-birthday-cake" style="color:#e91e63;"></i> 本月壽星提醒 (生日禮)</h3>
+          <table class="panel-table">
+            <thead><tr><th>派遣人員</th><th>生日日期</th><th>狀態</th></tr></thead>
+            <tbody id="dash_birthday_table">
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -678,6 +687,7 @@
         <div><label>電話</label><input id="staff_tel"></div>
         <div><label>地址</label><input id="staff_addr"></div>
         <div><label>身份證</label><input id="staff_id"></div>
+        <div><label>生日</label><input type="date" id="staff_birthday"></div>
         <div><label>時薪</label><input id="staff_hourly" type="number" value="0" min="0" step="10"></div>
         <div><label>勞保</label><input id="staff_labor" type="number" value="0" min="0"></div>
         <div><label>健保</label><input id="staff_health" type="number" value="0" min="0"></div>
@@ -695,6 +705,7 @@
             <th>電話</th>
             <th>地址</th>
             <th>身份證</th>
+            <th>生日</th>
             <th>時薪</th>
             <th>勞保</th>
             <th>健保</th>
@@ -1069,7 +1080,7 @@ function showPage(page, link) {
     attend: '派遣記錄',
     point: '點數統計',
     bill: '對帳單',
-    salary: '薪資計算',
+    salary: '薪薪計算',
     boss: '老闆專區',
     dashboard: '總覽儀表板'
   };
@@ -1538,6 +1549,7 @@ function renderStaffTable(){
       <td>${item.tel||'-'}</td>
       <td>${item.addr||'-'}</td>
       <td>${item.id||'-'}</td>
+      <td>${item.birthday||'-'}</td>
       <td>${item.hourly||0}</td>
       <td>${item.labor||0}</td>
       <td>${item.health||0}</td>
@@ -1550,7 +1562,7 @@ function renderStaffTable(){
       </td>
     </tr>`;
   });
-  document.getElementById('staffTable').innerHTML=html||'<tr><td colspan=11>無資料</td></tr>';
+  document.getElementById('staffTable').innerHTML=html||'<tr><td colspan=12>無資料</td></tr>';
   renderPagination('staff',total,totalPages); fillFilters(); 
   if(document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
 }
@@ -1561,6 +1573,7 @@ function addStaff(){
     tel: document.getElementById('staff_tel').value.trim(),
     addr: document.getElementById('staff_addr').value.trim(),
     id: document.getElementById('staff_id').value.trim(),
+    birthday: document.getElementById('staff_birthday').value,
     hourly: document.getElementById('staff_hourly').value,
     labor: document.getElementById('staff_labor').value,
     health: document.getElementById('staff_health').value,
@@ -1583,6 +1596,7 @@ function editStaff(i){
   document.getElementById('staff_tel').value=d.tel||'';
   document.getElementById('staff_addr').value=d.addr||'';
   document.getElementById('staff_id').value=d.id||'';
+  document.getElementById('staff_birthday').value=d.birthday||'';
   document.getElementById('staff_hourly').value=d.hourly||0;
   document.getElementById('staff_labor').value=d.labor||0;
   document.getElementById('staff_health').value=d.health||0;
@@ -1599,6 +1613,7 @@ function updateStaff(){
     tel: document.getElementById('staff_tel').value.trim(),
     addr: document.getElementById('staff_addr').value.trim(),
     id: document.getElementById('staff_id').value.trim(),
+    birthday: document.getElementById('staff_birthday').value,
     hourly: document.getElementById('staff_hourly').value,
     labor: document.getElementById('staff_labor').value,
     health: document.getElementById('staff_health').value,
@@ -1632,6 +1647,7 @@ function clearStaffForm(){
   document.getElementById('staff_tel').value='';
   document.getElementById('staff_addr').value='';
   document.getElementById('staff_id').value='';
+  document.getElementById('staff_birthday').value='';
   document.getElementById('staff_hourly').value='0';
   document.getElementById('staff_labor').value='0';
   document.getElementById('staff_health').value='0';
@@ -2024,6 +2040,36 @@ function renderDashboard(){
   const todayTableObj = document.getElementById('dash_today_table');
   if (todayTableObj) {
      todayTableObj.innerHTML = todayHtml || '<tr><td colspan="3" style="text-align:center; color:#999; padding: 15px;">今日暫無派遣記錄</td></tr>';
+  }
+
+  // --- 3. 渲染本月壽星 (生日禮提醒) ---
+  const currentMonth = todayDate.getMonth() + 1;
+  let bdayHtml = '';
+
+  // 篩選出「在職」且「生日月份等於本月」的人員，並依照日期排序
+  const birthdayStaff = staffData.filter(x => {
+    if (x.status !== '在職' || !x.birthday) return false;
+    const month = parseInt(x.birthday.split('-')[1], 10);
+    return month === currentMonth;
+  }).sort((a, b) => {
+    const dayA = parseInt(a.birthday.split('-')[2], 10);
+    const dayB = parseInt(b.birthday.split('-')[2], 10);
+    return dayA - dayB;
+  });
+
+  birthdayStaff.forEach(item => {
+    // 擷取月和日顯示 (例如：03-15)
+    const shortDate = item.birthday.substring(5);
+    bdayHtml += `<tr>
+      <td style="font-weight:bold; color:#333;">${item.name}</td>
+      <td>${shortDate}</td>
+      <td><span style="color:#e91e63; font-weight:bold; font-size:13px;"><i class="fas fa-gift"></i> 準備生日禮</span></td>
+    </tr>`;
+  });
+
+  const bdayTableObj = document.getElementById('dash_birthday_table');
+  if (bdayTableObj) {
+     bdayTableObj.innerHTML = bdayHtml || '<tr><td colspan="3" style="text-align:center; color:#999; padding: 15px;">本月目前無壽星 🎂</td></tr>';
   }
 }
 
