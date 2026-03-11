@@ -591,10 +591,15 @@
       </table>
     </div>
 
-    <!-- 派遣人員頁面 -->
+      <!-- 派遣人員頁面 - 新增人名下拉篩選 -->
     <div class="page" id="page-staff">
-      <div class="page-title">派遣人員</div>
+      <div class="page-title">派遣人員管理</div>
       <div class="filter-bar">
+        <label>姓名：</label><input type="text" id="staff_filter_name" oninput="resetPage('staff'); renderStaffTable()" placeholder="輸入姓名搜尋">
+        <!-- 新增的下拉選擇人名功能 -->
+        <label>選擇人員：</label><select id="staff_filter_name_select" onchange="resetPage('staff'); renderStaffTable()">
+          <option value="">全部人員</option>
+        </select>
         <label>狀態：</label>
         <select id="staff_filter_status" onchange="resetPage('staff'); renderStaffTable()">
           <option value="all">全部</option>
